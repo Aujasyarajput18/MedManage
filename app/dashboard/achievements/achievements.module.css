@@ -1,0 +1,75 @@
+.heroGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.heroValue {
+  font-family: 'Outfit', sans-serif;
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--success);
+}
+
+.heroSub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.badgeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-4);
+}
+
+.badgeCard {
+  border-radius: var(--radius-lg);
+  padding: var(--space-5) var(--space-4);
+  text-align: center;
+  transition: all 0.25s ease;
+}
+
+.unlocked {
+  background: var(--bg-glass);
+  border: 1px solid rgba(108,99,255,0.4);
+  box-shadow: 0 4px 20px rgba(108,99,255,0.1);
+}
+
+.unlocked:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(108,99,255,0.25);
+}
+
+.locked {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
+.badgeIcon {
+  font-size: 2.2rem;
+  margin-bottom: var(--space-2);
+}
+
+.badgeTitle {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.badgeDesc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.badgeDate {
+  font-size: 0.7rem;
+  color: var(--success);
+  margin-top: 6px;
+  font-weight: 600;
+}

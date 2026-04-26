@@ -1,0 +1,80 @@
+.heroCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+@media (min-width: 480px) {
+  .heroCard {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.ringSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.ringStats {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.chartSection {
+  flex: 1;
+}
+
+.weekChart {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  height: 80px;
+}
+
+.barWrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+
+.barTrack {
+  flex: 1;
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.barFill {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  min-height: 4px;
+  transition: height 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.barLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.doseRow {
+  transition: transform 0.15s ease;
+}
+.doseRow:hover {
+  transform: translateX(3px);
+}

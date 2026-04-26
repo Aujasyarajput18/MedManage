@@ -1,0 +1,39 @@
+{
+  "name": "MedManage — Free Medication Tracker",
+  "short_name": "MedManage",
+  "description": "AI-powered medication tracking with SOS emergency, gamification, and drug interaction checker. Free forever.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0A0A1A",
+  "theme_color": "#6C63FF",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["health", "medical", "lifestyle"],
+  "lang": "en",
+  "shortcuts": [
+    {
+      "name": "Add Medicine",
+      "url": "/dashboard/medicines/add",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "SOS Emergency",
+      "url": "/dashboard/sos",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

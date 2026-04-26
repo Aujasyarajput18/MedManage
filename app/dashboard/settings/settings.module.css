@@ -1,0 +1,68 @@
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--primary-glow);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary-light);
+  overflow: hidden;
+  margin: 0 auto;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.themeToggle {
+  display: flex;
+  background: var(--bg-glass);
+  border-radius: var(--radius-full);
+  padding: 2px;
+  gap: 2px;
+}
+.themeBtn {
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+.themeBtn.active {
+  background: var(--primary);
+  color: white;
+}
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggleSlider {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-glass);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: 0.3s;
+  border: 1px solid var(--border);
+}
+.toggleSlider::before {
+  content: '';
+  position: absolute;
+  width: 18px; height: 18px;
+  left: 2px; top: 2px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: 0.3s;
+}
+.toggle input:checked + .toggleSlider { background: var(--primary); }
+.toggle input:checked + .toggleSlider::before { transform: translateX(20px); background: white; }
