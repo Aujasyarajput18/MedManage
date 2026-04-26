@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import styles from './layout.module.css';
@@ -17,14 +17,17 @@ export default function DashboardLayout({ children }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const isDemo = searchParams.get('demo') === 'true';
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user && !isDemo) {
+    // Check demo mode from URL safely on client side
+    const demo = typeof window !== 'undefined' && window.location.search.includes('demo=true');
+    setIsDemo(demo);
+
+    if (!loading && !user && !demo) {
       router.replace('/auth/login');
     }
-  }, [user, loading, router, isDemo]);
+  }, [user, loading, router]);
 
   if (loading && !isDemo) {
     return <div className="page flex items-center justify-center">Loading...</div>;
