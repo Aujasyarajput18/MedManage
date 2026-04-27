@@ -1,9 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { addMedicine } from '@/lib/firestore';
-import { checkDrugInteractions } from '@/lib/ai';
 
 // Popular Indian medicines autocomplete
 const INDIAN_MEDICINES = [
@@ -31,18 +31,29 @@ export default function AddMedicinePage() {
   const router = useRouter();
 
   const [form, setForm] = useState({
-    name: '',
-    dosage: '',
-    unit: 'mg',
-    category: 'Chronic',
-    frequency: 'daily',
-    intervalHours: 8,
-    times: ['08:00'],
+    name: '', dosage: '', unit: 'mg', category: 'Chronic',
+    frequency: 'daily', intervalHours: 8, times: ['08:00'],
     startDate: new Date().toISOString().split('T')[0],
-    endDate: '',
-    pillCount: '',
-    notes: '',
+    endDate: '', pillCount: '', notes: '',
   });
+
+  // Pre-fill from URL params (set by pill identifier)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const p = new URLSearchParams(window.location.search);
+    const name   = p.get('name');
+    const dosage = p.get('dosage');
+    const notes  = p.get('notes');
+    if (name || dosage) {
+      setForm(f => ({
+        ...f,
+        name:   name   || f.name,
+        dosage: dosage ? dosage.replace(/[a-zA-Z]+$/, '') : f.dosage,
+        unit:   dosage ? (dosage.match(/[a-zA-Z]+$/)?.[0] || 'mg') : f.unit,
+        notes:  notes  || f.notes,
+      }));
+    }
+  }, []);
 
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -104,8 +115,16 @@ export default function AddMedicinePage() {
         <button onClick={() => router.back()} className="btn btn-ghost btn-sm mb-4" style={{ paddingLeft: '8px' }}>
           ← Back
         </button>
-        <h1 className="page-title">Add Medicine</h1>
-        <p className="page-subtitle">AI checks interactions automatically</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="page-title">Add Medicine</h1>
+            <p className="page-subtitle">AI checks interactions automatically</p>
+          </div>
+          <Link href="/dashboard/medicines/identify" className="btn btn-ghost btn-sm flex-col" style={{ gap: 2 }}>
+            <span>📷</span>
+            <span style={{ fontSize: '0.65rem' }}>Identify</span>
+          </Link>
+        </div>
       </div>
 
       {error && (

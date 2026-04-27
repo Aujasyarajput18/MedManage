@@ -1,0 +1,49 @@
+.uploadArea {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px dashed var(--border);
+  transition: border-color 0.2s ease, background 0.2s ease;
+  overflow: hidden;
+  padding: 0;
+}
+
+.uploadArea:hover {
+  border-color: var(--primary);
+  background: rgba(108, 99, 255, 0.05);
+}
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: var(--space-8);
+  text-align: center;
+}
+
+.uploadIcon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.preview {
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+}
+
+.resultGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.resultItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { subscribeMedicines, subscribeDoseLogs, updateStreak, getUserProfile } from '@/lib/firestore';
+import { subscribeMedicines, subscribeDoseLogs, getUserProfile } from '@/lib/firestore';
+import { isDemoMode, getDemoMedicines, getDemoProfile } from '@/lib/demo';
 import Link from 'next/link';
 import styles from './dashboard.module.css';
 
@@ -85,7 +86,16 @@ export default function DashboardPage() {
   const name     = profile?.name?.split(' ')[0] || user?.displayName?.split(' ')[0] || 'there';
 
   useEffect(() => {
-    if (!user) return;
+    // Demo mode — load from localStorage seed
+    if (isDemoMode()) {
+      const demoMeds = getDemoMedicines();
+      const demoProf = getDemoProfile();
+      if (demoMeds.length) setMedicines(demoMeds);
+      if (demoProf) setProfile(demoProf);
+      setLoading(false);
+      return;
+    }
+    if (!user) { setLoading(false); return; }
     setLoading(true);
     const unsubMeds = subscribeMedicines(user.uid, (meds) => {
       setMedicines(meds.length ? meds : DEMO_MEDICINES);

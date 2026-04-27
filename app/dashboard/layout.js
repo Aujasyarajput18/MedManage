@@ -6,11 +6,11 @@ import { useAuth } from '@/context/AuthContext';
 import styles from './layout.module.css';
 
 const NAV_ITEMS = [
-  { href: '/dashboard',          icon: '🏠', label: 'Home' },
-  { href: '/dashboard/medicines',icon: '💊', label: 'Meds' },
+  { href: '/dashboard',               icon: '🏠', label: 'Home'    },
+  { href: '/dashboard/medicines',     icon: '💊', label: 'Meds'    },
   { href: '/dashboard/medicines/add', icon: '➕', label: 'Add', isPrimary: true },
-  { href: '/dashboard/calendar', icon: '📅', label: 'Calendar' },
-  { href: '/dashboard/sos',      icon: '🆘', label: 'SOS' },
+  { href: '/dashboard/calendar',      icon: '📅', label: 'Calendar' },
+  { href: '/dashboard/achievements',  icon: '🏆', label: 'Awards'  },
 ];
 
 export default function DashboardLayout({ children }) {
