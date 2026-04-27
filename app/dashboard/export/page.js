@@ -10,6 +10,9 @@ export default function ExportPage() {
   const [journal, setJournal]     = useState([]);
   const [profile, setProfile]     = useState(null);
 
+  const name  = profile?.name || user?.displayName || 'Raj Kumar';
+  const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+
   useEffect(() => {
     if (!user) {
       // Demo data
@@ -29,12 +32,24 @@ export default function ExportPage() {
     return () => { unsubMeds(); unsubJournal(); };
   }, [user]);
 
-  const handlePrint = () => {
-    window.print();
+  const handleWhatsApp = () => {
+    const text = encodeURIComponent(
+      `🏥 My MedManage Health Report\n\n` +
+      `📋 Medicines: ${medicines.map(m => `${m.name} ${m.dosage}`).join(', ')}\n` +
+      `📅 Generated: ${today}\n\n` +
+      `Download MedManage (free): https://medmanage-web.vercel.app`
+    );
+    window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
-  const name = profile?.name || user?.displayName || 'Patient';
-  const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+  const handleExportJSON = () => {
+    const data = { profile: { name, exportedAt: today }, medicines, journal };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'medmanage-data.json'; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="flex-col gap-6 animate-fade-in">
@@ -42,9 +57,17 @@ export default function ExportPage() {
       <div className="page-header no-print">
         <h1 className="page-title">📄 Doctor's Report</h1>
         <p className="page-subtitle">Generate a PDF summary of your health data</p>
-        <button onClick={handlePrint} className="btn btn-primary mt-4 w-full">
-          🖨️ Save as PDF / Print
-        </button>
+        <div className="flex-col gap-3 mt-4">
+          <button onClick={handlePrint} className="btn btn-primary w-full">
+            🖨️ Save as PDF / Print
+          </button>
+          <button onClick={handleWhatsApp} className="btn w-full" style={{ background: '#25D366', color: '#fff' }}>
+            <span style={{ marginRight: 8 }}>💬</span>Share via WhatsApp
+          </button>
+          <button onClick={handleExportJSON} className="btn btn-ghost w-full">
+            📥 Download Raw Data (JSON)
+          </button>
+        </div>
       </div>
 
       {/* The Printable Report */}

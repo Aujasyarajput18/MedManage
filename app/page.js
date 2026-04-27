@@ -1,5 +1,7 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { seedDemoData } from '@/lib/demo';
 import styles from './page.module.css';
 
 const USPS = [
@@ -12,6 +14,13 @@ const USPS = [
 ];
 
 export default function LandingPage() {
+  const router = useRouter();
+
+  const handleDemo = () => {
+    seedDemoData();
+    router.push('/dashboard?demo=true');
+  };
+
   return (
     <div className={styles.wrapper}>
       {/* Nav */}
@@ -49,9 +58,9 @@ export default function LandingPage() {
           <Link href="/auth/signup" className="btn btn-primary btn-lg">
             Get Started Free →
           </Link>
-          <Link href="/dashboard?demo=true" className="btn btn-ghost btn-lg">
+          <button onClick={handleDemo} className="btn btn-ghost btn-lg">
             Try Demo (no login)
-          </Link>
+          </button>
         </div>
 
         {/* Social proof */}
@@ -126,9 +135,9 @@ export default function LandingPage() {
           <Link href="/auth/signup" className="btn btn-primary btn-lg">
             Sign Up — It's Free →
           </Link>
-          <Link href="/dashboard?demo=true" className="btn btn-ghost btn-lg">
+          <button onClick={handleDemo} className="btn btn-ghost btn-lg">
             Try Demo First
-          </Link>
+          </button>
         </div>
       </section>
 

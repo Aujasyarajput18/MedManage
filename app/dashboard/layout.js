@@ -6,11 +6,11 @@ import { useAuth } from '@/context/AuthContext';
 import styles from './layout.module.css';
 
 const NAV_ITEMS = [
-  { href: '/dashboard', icon: '🏠', label: 'Home' },
-  { href: '/dashboard/medicines', icon: '💊', label: 'Meds' },
+  { href: '/dashboard',          icon: '🏠', label: 'Home' },
+  { href: '/dashboard/medicines',icon: '💊', label: 'Meds' },
   { href: '/dashboard/medicines/add', icon: '➕', label: 'Add', isPrimary: true },
-  { href: '/dashboard/sos', icon: '🆘', label: 'SOS' },
-  { href: '/dashboard/settings', icon: '⚙️', label: 'More' },
+  { href: '/dashboard/calendar', icon: '📅', label: 'Calendar' },
+  { href: '/dashboard/sos',      icon: '🆘', label: 'SOS' },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -56,13 +56,13 @@ export default function DashboardLayout({ children }) {
           >
             SOS
           </button>
-          <div className={styles.avatar}>
+          <Link href="/dashboard/settings" className={styles.avatar}>
             {user?.photoURL ? (
               <img src={user.photoURL} alt="Profile" />
             ) : (
               <span>{user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'D'}</span>
             )}
-          </div>
+          </Link>
         </div>
       </header>
 
