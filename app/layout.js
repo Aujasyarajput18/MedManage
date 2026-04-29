@@ -1,6 +1,7 @@
 import '@/styles/globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import OfflineBanner from '@/components/ui/OfflineBanner';
 
 export const metadata = {
   title:       'MedManage — Free Medication Tracker for India',
@@ -29,6 +30,7 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body>
+        <OfflineBanner />
         <ThemeProvider>
           <AuthProvider>
             {children}

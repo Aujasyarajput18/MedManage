@@ -16,6 +16,18 @@ export default function SettingsPage() {
   const [theme, setTheme]     = useState('dark');
 
   useEffect(() => {
+    const saved = localStorage.getItem('theme') || 'dark';
+    setTheme(saved);
+    document.documentElement.setAttribute('data-theme', saved);
+  }, []);
+
+  const handleTheme = (t) => {
+    setTheme(t);
+    localStorage.setItem('theme', t);
+    document.documentElement.setAttribute('data-theme', t);
+  };
+
+  useEffect(() => {
     if (!user) {
       setProfile({ name: 'Demo User', email: 'demo@medmanage.app' });
       return;
@@ -101,7 +113,7 @@ export default function SettingsPage() {
           <div className={styles.themeToggle}>
             {['dark', 'light'].map(t => (
               <button key={t}
-                onClick={() => setTheme(t)}
+                onClick={() => handleTheme(t)}
                 className={`${styles.themeBtn} ${theme === t ? styles.active : ''}`}
               >
                 {t === 'dark' ? '🌙 Dark' : '☀️ Light'}
@@ -123,13 +135,29 @@ export default function SettingsPage() {
         </Row>
       </Section>
 
+      {/* Quick Links */}
+      <Section title="Quick Links">
+        <Row icon="🏥" label="Doctor Appointments">
+          <Link href="/dashboard/appointments" className="btn btn-ghost btn-sm">View →</Link>
+        </Row>
+        <Row icon="🆘" label="SOS Emergency">
+          <Link href="/dashboard/sos" className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }}>Open →</Link>
+        </Row>
+        <Row icon="📷" label="Identify a Pill (AI)">
+          <Link href="/dashboard/medicines/identify" className="btn btn-ghost btn-sm">Scan →</Link>
+        </Row>
+        <Row icon="🤖" label="Drug Interactions">
+          <Link href="/dashboard/medicines/interactions" className="btn btn-ghost btn-sm">Check →</Link>
+        </Row>
+        <Row icon="📄" label="Doctor's Report">
+          <Link href="/dashboard/export" className="btn btn-ghost btn-sm">PDF →</Link>
+        </Row>
+      </Section>
+
       {/* Privacy & Data */}
       <Section title="Privacy & Data">
         <Row icon="🔒" label="We never sell your data">
           <span className="badge badge-success">✓ Protected</span>
-        </Row>
-        <Row icon="📄" label="Generate Doctor's Report">
-          <Link href="/dashboard/export" className="btn btn-ghost btn-sm">PDF Export</Link>
         </Row>
       </Section>
 

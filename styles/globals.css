@@ -84,6 +84,13 @@
   --z-modal:   300;
   --z-toast:   400;
   --z-overlay: 500;
+
+  /* Glow shadows */
+  --shadow-glow:        0 0 20px rgba(108, 99, 255, 0.35);
+  --shadow-glow-sm:     0 0 10px rgba(108, 99, 255, 0.25);
+
+  /* Text gradient */
+  --gradient-primary:   linear-gradient(135deg, #6C63FF, #FF6584);
 }
 
 /* Light mode overrides */

@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { seedDemoData } from '@/lib/demo';
+import QRCode from '@/components/ui/QRCode';
 import styles from './page.module.css';
 
 const USPS = [
@@ -69,6 +70,12 @@ export default function LandingPage() {
           <span>✅ Free forever</span>
           <span>✅ Works on any phone</span>
           <span>✅ Installs like an app</span>
+        </div>
+
+        {/* QR Code for jury */}
+        <div className={styles.qrSection}>
+          <QRCode size={160} />
+          <p className={styles.qrText}>📱 Scan to try on your phone right now</p>
         </div>
       </section>
 
