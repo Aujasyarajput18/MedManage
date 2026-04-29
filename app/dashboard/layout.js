@@ -3,30 +3,32 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import FloatingSOS from '@/components/ui/FloatingSOS';
 import styles from './layout.module.css';
 
 const NAV_ITEMS = [
-  { href: '/dashboard',               icon: '🏠', label: 'Home'    },
-  { href: '/dashboard/medicines',     icon: '💊', label: 'Meds'    },
-  { href: '/dashboard/medicines/add', icon: '➕', label: 'Add', isPrimary: true },
-  { href: '/dashboard/journal',       icon: '📓', label: 'Journal' },
-  { href: '/dashboard/analytics',     icon: '📊', label: 'Insights'},
+  { href: '/dashboard',               icon: '🏠', transKey: 'home'    },
+  { href: '/dashboard/medicines',     icon: '💊', transKey: 'meds'    },
+  { href: '/dashboard/medicines/add', icon: '➕', transKey: 'add', isPrimary: true },
+  { href: '/dashboard/journal',       icon: '📓', transKey: 'journal' },
+  { href: '/dashboard/analytics',     icon: '📊', transKey: 'insights'},
 ];
 
 const MORE_ITEMS = [
-  { href: '/dashboard/calendar',     icon: '📅', label: 'Calendar'     },
-  { href: '/dashboard/achievements', icon: '🏆', label: 'Achievements' },
-  { href: '/dashboard/appointments', icon: '🩺', label: 'Appointments' },
-  { href: '/dashboard/reminders',    icon: '🔔', label: 'Reminders'    },
-  { href: '/dashboard/profiles',     icon: '👨‍👩‍👧', label: 'Profiles'     },
-  { href: '/dashboard/sos',          icon: '🆘', label: 'SOS'          },
-  { href: '/dashboard/export',       icon: '📄', label: 'Export PDF'   },
-  { href: '/dashboard/settings',     icon: '⚙️', label: 'Settings'     },
+  { href: '/dashboard/calendar',     icon: '📅', transKey: 'calendar'     },
+  { href: '/dashboard/achievements', icon: '🏆', transKey: 'achievements' },
+  { href: '/dashboard/appointments', icon: '🩺', transKey: 'appointments' },
+  { href: '/dashboard/reminders',    icon: '🔔', transKey: 'reminders'    },
+  { href: '/dashboard/profiles',     icon: '👨‍👩‍👧', transKey: 'profiles'     },
+  { href: '/dashboard/sos',          icon: '🆘', transKey: 'sos'          },
+  { href: '/dashboard/export',       icon: '📄', transKey: 'exportPdf'   },
+  { href: '/dashboard/settings',     icon: '⚙️', transKey: 'settings'     },
 ];
 
 export default function DashboardLayout({ children }) {
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
   const [isDemo, setIsDemo] = useState(false);
@@ -111,7 +113,9 @@ export default function DashboardLayout({ children }) {
           width: 40, height: 4, background: 'var(--border)',
           borderRadius: 2, margin: '0 auto var(--space-5)',
         }} />
-        <p className="text-xs text-muted font-bold mb-3">MORE PAGES</p>
+        <p className="text-xs text-muted font-bold mb-3" style={{ textTransform: 'uppercase' }}>
+          {t('nav', 'morePages')}
+        </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-3)' }}>
           {MORE_ITEMS.map((item) => (
             <Link
@@ -129,7 +133,7 @@ export default function DashboardLayout({ children }) {
               }}
             >
               <span style={{ fontSize: '1.4rem' }}>{item.icon}</span>
-              <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>{item.label}</span>
+              <span style={{ fontSize: '0.7rem', fontWeight: 600 }}>{t('nav', item.transKey)}</span>
             </Link>
           ))}
         </div>
@@ -155,7 +159,7 @@ export default function DashboardLayout({ children }) {
               className={`${styles.navItem} ${isActive ? styles.active : ''}`}
             >
               <span className={styles.navIcon}>{item.icon}</span>
-              <span className={styles.navLabel}>{item.label}</span>
+              <span className={styles.navLabel}>{t('nav', item.transKey)}</span>
             </Link>
           );
         })}
@@ -167,7 +171,7 @@ export default function DashboardLayout({ children }) {
           style={{ background: 'none', border: 'none', cursor: 'pointer' }}
         >
           <span className={styles.navIcon}>☰</span>
-          <span className={styles.navLabel}>More</span>
+          <span className={styles.navLabel}>{t('nav', 'more')}</span>
         </button>
       </nav>
 

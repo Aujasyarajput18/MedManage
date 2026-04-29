@@ -1,6 +1,7 @@
 import '@/styles/globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { LanguageProvider } from '@/context/LanguageContext';
 import OfflineBanner from '@/components/ui/OfflineBanner';
 
 export const metadata = {
@@ -32,9 +33,11 @@ export default function RootLayout({ children }) {
       <body>
         <OfflineBanner />
         <ThemeProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

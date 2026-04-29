@@ -1,13 +1,14 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { subscribeMedicines, subscribeDoseLogs, getUserProfile } from '@/lib/firestore';
 import { isDemoMode, getDemoMedicines, getDemoProfile } from '@/lib/demo';
 import Link from 'next/link';
 import styles from './dashboard.module.css';
 
 // SVG Adherence Ring
-function AdherenceRing({ percent }) {
+function AdherenceRing({ percent, todayText }) {
   const r = 54;
   const circ = 2 * Math.PI * r;
   const offset = circ - (percent / 100) * circ;
@@ -28,7 +29,7 @@ function AdherenceRing({ percent }) {
         style={{ transition: 'stroke-dashoffset 1s ease, stroke 0.5s ease' }}
       />
       <text x="70" y="66" textAnchor="middle" fill="white" fontSize="22" fontWeight="800" fontFamily="Outfit,sans-serif">{percent}%</text>
-      <text x="70" y="84" textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="11" fontFamily="Inter,sans-serif">today</text>
+      <text x="70" y="84" textAnchor="middle" fill="rgba(255,255,255,0.5)" fontSize="11" fontFamily="Inter,sans-serif">{todayText}</text>
     </svg>
   );
 }
@@ -74,6 +75,7 @@ const DEMO_LOGS = [
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [medicines, setMedicines]   = useState(DEMO_MEDICINES);
   const [doseLogs,  setDoseLogs]    = useState(DEMO_LOGS);
   const [profile,   setProfile]     = useState(null);
@@ -156,7 +158,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title" style={{ fontSize: '1.7rem' }}>
-            Hey, {name} 👋
+            {t('dashboard', 'greeting')}, {name} 👋
           </h1>
           <p className="text-muted text-sm">{dayName}, {dateStr}</p>
         </div>
@@ -168,25 +170,25 @@ export default function DashboardPage() {
       {/* Hero stats card */}
       <div className={`glass-card ${styles.heroCard}`}>
         <div className={styles.ringSection}>
-          <AdherenceRing percent={adherence} />
+          <AdherenceRing percent={adherence} todayText={t('dashboard', 'today')} />
           <div className={styles.ringStats}>
             <div className={styles.statItem}>
               <span className="text-success font-bold" style={{ fontSize: '1.3rem' }}>{takenCount}</span>
-              <span className="text-xs text-muted">Taken</span>
+              <span className="text-xs text-muted">{t('dashboard', 'taken')}</span>
             </div>
             <div className={styles.statItem}>
               <span className="text-warning font-bold" style={{ fontSize: '1.3rem' }}>{skippedCount}</span>
-              <span className="text-xs text-muted">Skipped</span>
+              <span className="text-xs text-muted">{t('dashboard', 'skipped')}</span>
             </div>
             <div className={styles.statItem}>
               <span className="text-muted font-bold" style={{ fontSize: '1.3rem' }}>{pendingCount > 0 ? pendingCount : 0}</span>
-              <span className="text-xs text-muted">Pending</span>
+              <span className="text-xs text-muted">{t('dashboard', 'pending')}</span>
             </div>
           </div>
         </div>
 
         <div className={styles.chartSection}>
-          <p className="text-xs text-muted font-bold uppercase mb-2">This week</p>
+          <p className="text-xs text-muted font-bold uppercase mb-2">{t('dashboard', 'thisWeek')}</p>
           <WeekChart data={weekData} />
         </div>
       </div>
@@ -197,21 +199,21 @@ export default function DashboardPage() {
           <span style={{ fontSize: '1.3rem' }}>💎</span>
           <div>
             <div className="font-bold">{points.toLocaleString()}</div>
-            <div className="text-xs text-muted">Points</div>
+            <div className="text-xs text-muted">{t('dashboard', 'points')}</div>
           </div>
         </div>
         <div className="glass-card-sm flex items-center gap-2" style={{ flex: 1 }}>
           <span style={{ fontSize: '1.3rem' }}>📅</span>
           <div>
             <div className="font-bold">{medicines.length}</div>
-            <div className="text-xs text-muted">Medicines</div>
+            <div className="text-xs text-muted">{t('dashboard', 'medicines')}</div>
           </div>
         </div>
         <Link href="/dashboard/achievements" className="glass-card-sm flex items-center gap-2" style={{ flex: 1, textDecoration: 'none' }}>
           <span style={{ fontSize: '1.3rem' }}>🏆</span>
           <div>
-            <div className="font-bold">Badges</div>
-            <div className="text-xs text-muted">View all</div>
+            <div className="font-bold">{t('dashboard', 'badges')}</div>
+            <div className="text-xs text-muted">{t('dashboard', 'viewAll')}</div>
           </div>
         </Link>
       </div>
@@ -219,16 +221,16 @@ export default function DashboardPage() {
       {/* Today's schedule */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold" style={{ fontSize: '1.1rem' }}>Today's Schedule</h2>
-          <Link href="/dashboard/medicines" className="text-xs" style={{ color: 'var(--primary)' }}>All medicines →</Link>
+          <h2 className="font-bold" style={{ fontSize: '1.1rem' }}>{t('dashboard', 'todaysSchedule')}</h2>
+          <Link href="/dashboard/medicines" className="text-xs" style={{ color: 'var(--primary)' }}>{t('dashboard', 'allMedicines')} →</Link>
         </div>
 
         {todaySchedule.length === 0 && (
           <div className="glass-card text-center" style={{ padding: 'var(--space-8)' }}>
             <p style={{ fontSize: '2rem', marginBottom: 8 }}>🎉</p>
-            <p className="font-bold">No medicines today!</p>
-            <p className="text-sm text-muted mt-1">Or add your first medicine to get started.</p>
-            <Link href="/dashboard/medicines/add" className="btn btn-primary btn-sm mt-4">+ Add Medicine</Link>
+            <p className="font-bold">{t('dashboard', 'noMedicinesToday')}</p>
+            <p className="text-sm text-muted mt-1">{t('dashboard', 'addFirstMedicine')}</p>
+            <Link href="/dashboard/medicines/add" className="btn btn-primary btn-sm mt-4">+ {t('dashboard', 'addMedicine')}</Link>
           </div>
         )}
 
@@ -251,12 +253,12 @@ export default function DashboardPage() {
               </div>
 
               <div>
-                {slot.status === 'taken' && <span className="badge badge-success">✓ Taken</span>}
-                {slot.status === 'skipped' && <span className="badge badge-warning">Skipped</span>}
-                {slot.status === 'missed' && <span className="badge badge-danger">Missed</span>}
+                {slot.status === 'taken' && <span className="badge badge-success">✓ {t('dashboard', 'taken')}</span>}
+                {slot.status === 'skipped' && <span className="badge badge-warning">{t('dashboard', 'skipped')}</span>}
+                {slot.status === 'missed' && <span className="badge badge-danger">{t('dashboard', 'missed')}</span>}
                 {slot.status === 'pending' && (
                   <Link href="/dashboard/medicines" className="btn btn-sm btn-primary" style={{ minHeight: 32, padding: '0 12px', textDecoration: 'none' }}>
-                    Take
+                    {t('dashboard', 'take')}
                   </Link>
                 )}
               </div>
@@ -271,8 +273,8 @@ export default function DashboardPage() {
           <div className="glass-card-primary flex items-center gap-4">
             <div className="btn-icon animate-glow" style={{ background: 'var(--primary)', color: 'white', flexShrink: 0 }}>🤖</div>
             <div>
-              <div className="font-bold text-sm">AI Drug Interaction Check</div>
-              <div className="text-xs text-secondary">Analyzing {medicines.length} medicines — tap to view</div>
+              <div className="font-bold text-sm">{t('dashboard', 'aiInteractionCheck')}</div>
+              <div className="text-xs text-secondary">{t('dashboard', 'aiAnalyzing')}</div>
             </div>
             <span style={{ marginLeft: 'auto', color: 'var(--primary)' }}>→</span>
           </div>

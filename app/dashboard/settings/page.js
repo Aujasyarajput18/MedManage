@@ -1,14 +1,17 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { getUserProfile, updateUserProfile } from '@/lib/firestore';
 import { signOut } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { LANGUAGES } from '@/lib/translations';
 import styles from './settings.module.css';
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const { langCode, setLang, t } = useLanguage();
   const router   = useRouter();
   const [profile, setProfile] = useState({ name: '', email: '' });
   const [saving, setSaving]   = useState(false);
@@ -16,9 +19,9 @@ export default function SettingsPage() {
   const [theme, setTheme]     = useState('dark');
 
   useEffect(() => {
-    const saved = localStorage.getItem('theme') || 'dark';
-    setTheme(saved);
-    document.documentElement.setAttribute('data-theme', saved);
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    setTheme(savedTheme);
+    document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
 
   const handleTheme = (t) => {
@@ -49,7 +52,7 @@ export default function SettingsPage() {
   };
 
   const handleSignOut = async () => {
-    if (!confirm('Sign out of MedManage?')) return;
+    if (!confirm(t('settings', 'signOut') + '?')) return;
     await signOut();
     router.push('/');
   };
@@ -79,11 +82,11 @@ export default function SettingsPage() {
   return (
     <div className="flex-col gap-6 animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">⚙️ Settings</h1>
+        <h1 className="page-title">⚙️ {t('settings', 'title')}</h1>
       </div>
 
       {/* Profile */}
-      <Section title="Profile">
+      <Section title={t('settings', 'profile')}>
         <div className={styles.avatar}>
           {user?.photoURL
             ? <img src={user.photoURL} alt="avatar" />
@@ -91,7 +94,7 @@ export default function SettingsPage() {
           }
         </div>
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="input-label">Display Name</label>
+          <label className="input-label">{t('settings', 'displayName')}</label>
           <input
             className="input"
             value={profile.name || ''}
@@ -99,99 +102,105 @@ export default function SettingsPage() {
           />
         </div>
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="input-label">Email</label>
+          <label className="input-label">{t('settings', 'email')}</label>
           <input className="input" value={profile.email || user?.email || ''} disabled style={{ opacity: 0.6 }} />
         </div>
         <button onClick={handleSave} className="btn btn-primary btn-sm" disabled={saving}>
-          {saved ? '✓ Saved!' : saving ? 'Saving...' : 'Save Changes'}
+          {saved ? `✓ ${t('settings', 'saved')}` : saving ? t('settings', 'saving') : t('settings', 'saveChanges')}
         </button>
       </Section>
 
       {/* App Preferences */}
-      <Section title="Preferences">
-        <Row icon="🎨" label="Theme">
+      <Section title={t('settings', 'preferences')}>
+        <Row icon="🎨" label={t('settings', 'theme')}>
           <div className={styles.themeToggle}>
-            {['dark', 'light'].map(t => (
-              <button key={t}
-                onClick={() => handleTheme(t)}
-                className={`${styles.themeBtn} ${theme === t ? styles.active : ''}`}
+            {['dark', 'light'].map(thm => (
+              <button key={thm}
+                onClick={() => handleTheme(thm)}
+                className={`${styles.themeBtn} ${theme === thm ? styles.active : ''}`}
               >
-                {t === 'dark' ? '🌙 Dark' : '☀️ Light'}
+                {thm === 'dark' ? `🌙 ${t('settings', 'dark')}` : `☀️ ${t('settings', 'light')}`}
               </button>
             ))}
           </div>
         </Row>
-        <Row icon="🔔" label="Notifications">
+        <Row icon="🔔" label={t('settings', 'notifications')}>
           <label className={styles.toggle}>
             <input type="checkbox" defaultChecked />
             <span className={styles.toggleSlider} />
           </label>
         </Row>
-        <Row icon="🌐" label="Language">
-          <select className="input" style={{ width: 120, minHeight: 36, padding: '4px 8px' }}>
-            <option>English</option>
-            <option>हिंदी</option>
+        <Row icon="🌐" label={t('settings', 'language')}>
+          <select 
+            className="input" 
+            style={{ width: 140, minHeight: 36, padding: '4px 8px' }}
+            value={langCode}
+            onChange={(e) => setLang(e.target.value)}
+          >
+            {LANGUAGES.map(lang => (
+              <option key={lang.code} value={lang.code}>{lang.native} ({lang.name})</option>
+            ))}
           </select>
         </Row>
       </Section>
 
       {/* Quick Links */}
-      <Section title="Quick Links">
-        <Row icon="🏥" label="Doctor Appointments">
-          <Link href="/dashboard/appointments" className="btn btn-ghost btn-sm">View →</Link>
+      <Section title={t('settings', 'quickLinks')}>
+        <Row icon="🏥" label={t('settings', 'doctorAppointments')}>
+          <Link href="/dashboard/appointments" className="btn btn-ghost btn-sm">{t('settings', 'view')} →</Link>
         </Row>
-        <Row icon="🆘" label="SOS Emergency">
-          <Link href="/dashboard/sos" className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }}>Open →</Link>
+        <Row icon="🆘" label={t('settings', 'sosEmergency')}>
+          <Link href="/dashboard/sos" className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }}>{t('settings', 'open')} →</Link>
         </Row>
-        <Row icon="📷" label="Identify a Pill (AI)">
-          <Link href="/dashboard/medicines/identify" className="btn btn-ghost btn-sm">Scan →</Link>
+        <Row icon="📷" label={t('settings', 'identifyPill')}>
+          <Link href="/dashboard/medicines/identify" className="btn btn-ghost btn-sm">{t('settings', 'scan')} →</Link>
         </Row>
-        <Row icon="🤖" label="Drug Interactions">
-          <Link href="/dashboard/medicines/interactions" className="btn btn-ghost btn-sm">Check →</Link>
+        <Row icon="🤖" label={t('settings', 'drugInteractions')}>
+          <Link href="/dashboard/medicines/interactions" className="btn btn-ghost btn-sm">{t('settings', 'check')} →</Link>
         </Row>
-        <Row icon="📄" label="Doctor's Report">
-          <Link href="/dashboard/export" className="btn btn-ghost btn-sm">PDF →</Link>
+        <Row icon="📄" label={t('settings', 'doctorsReport')}>
+          <Link href="/dashboard/export" className="btn btn-ghost btn-sm">{t('settings', 'pdf')} →</Link>
         </Row>
       </Section>
 
       {/* Privacy & Data */}
-      <Section title="Privacy & Data">
-        <Row icon="🔒" label="We never sell your data">
-          <span className="badge badge-success">✓ Protected</span>
+      <Section title={t('settings', 'privacyData')}>
+        <Row icon="🔒" label={t('settings', 'weNeverSell')}>
+          <span className="badge badge-success">✓ {t('settings', 'protected')}</span>
         </Row>
       </Section>
 
       {/* App */}
-      <Section title="App">
-        <Row icon="🔄" label="Reset Onboarding">
-          <button className="btn btn-ghost btn-sm" onClick={handleResetOnboarding}>Reset</button>
+      <Section title={t('settings', 'app')}>
+        <Row icon="🔄" label={t('settings', 'resetOnboarding')}>
+          <button className="btn btn-ghost btn-sm" onClick={handleResetOnboarding}>{t('settings', 'reset')}</button>
         </Row>
-        <Row icon="ℹ️" label="Version">
+        <Row icon="ℹ️" label={t('settings', 'version')}>
           <span className="text-muted text-sm">v1.0.0 (Jury Build)</span>
         </Row>
-        <Row icon="📋" label="Privacy Policy">
-          <a href="/privacy" className="btn btn-ghost btn-sm">View</a>
+        <Row icon="📋" label={t('settings', 'privacyPolicy')}>
+          <a href="/privacy" className="btn btn-ghost btn-sm">{t('settings', 'view')}</a>
         </Row>
-        <Row icon="📋" label="Terms of Service">
-          <a href="/terms" className="btn btn-ghost btn-sm">View</a>
+        <Row icon="📋" label={t('settings', 'termsOfService')}>
+          <a href="/terms" className="btn btn-ghost btn-sm">{t('settings', 'view')}</a>
         </Row>
       </Section>
 
       {/* Account */}
-      <Section title="Account">
+      <Section title={t('settings', 'account')}>
         <button
           onClick={handleSignOut}
           className="btn btn-ghost w-full"
           style={{ color: 'var(--danger)', borderColor: 'rgba(255,71,87,0.3)' }}
         >
-          🚪 Sign Out
+          🚪 {t('settings', 'signOut')}
         </button>
         <button
           className="btn btn-ghost w-full text-xs"
           style={{ color: 'var(--text-muted)' }}
           onClick={() => alert('Contact support@medmanage.app to delete your account')}
         >
-          Delete Account
+          {t('settings', 'deleteAccount')}
         </button>
       </Section>
     </div>
