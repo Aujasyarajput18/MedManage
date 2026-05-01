@@ -43,7 +43,7 @@ export default function SOSPage() {
   useEffect(() => {
     if (!user) return;
     const unsub = subscribeSOSContacts(user.uid, (c) => {
-      if (c.length > 0) setContacts(c);
+      setContacts(c);
     });
     return () => unsub();
   }, [user]);
@@ -160,13 +160,18 @@ export default function SOSPage() {
     }
 
     const contact = { name: newContact.name.trim(), phone: validNum };
-    if (user) {
-      await addSOSContact(user.uid, contact);
-    } else {
-      setContacts((prev) => [...prev, { id: Date.now().toString(), ...contact }]);
+    try {
+      if (user) {
+        await addSOSContact(user.uid, contact);
+      } else {
+        setContacts((prev) => [...prev, { id: Date.now().toString(), ...contact }]);
+      }
+      setNewContact({ name: '', phone: '' });
+      setShowAddContact(false);
+    } catch (err) {
+      console.error('Failed to add contact:', err);
+      setPhoneError('Failed to save to database. Check Firebase rules.');
     }
-    setNewContact({ name: '', phone: '' });
-    setShowAddContact(false);
   };
 
   const handleDeleteContact = async (id) => {
