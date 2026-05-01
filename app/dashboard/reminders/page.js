@@ -1,336 +1,426 @@
 'use client';
-import { useState, useEffect } from 'react';
+/**
+ * app/dashboard/reminders/page.js  [UPDATED]
+ *
+ * Full medication reminder UI:
+ * - Create reminders (medicineName + scheduledTime)
+ * - List with status badges
+ * - In-app alert modal: Taken / Snooze / Skip
+ * - Missed reminder detection on page load
+ * - Honest offline limitation notice
+ */
+
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { subscribeMedicines } from '@/lib/firestore';
+import {
+  getReminders, createReminder, updateReminder,
+  deleteReminder, collectMissedReminders,
+} from '@/lib/reminderStore';
+import {
+  startReminderEngine, cancelReminderTimers, setInAppAlertHandler,
+} from '@/lib/reminderEngine';
 
-const SNOOZE_OPTIONS = [
-  { label: '15 min',  value: 15 },
-  { label: '30 min',  value: 30 },
-  { label: '1 hour',  value: 60 },
-  { label: '2 hours', value: 120 },
-];
+// Snooze default = 10 minutes
+const SNOOZE_MINUTES = 10;
 
-const SOUND_OPTIONS = ['Default', 'Gentle', 'Chime', 'Vibrate only', 'Silent'];
+// ─── Status badge config ──────────────────────────────────────────────────
+const STATUS_STYLES = {
+  pending:  { label: '⏳ Pending',   color: 'var(--warning)'  },
+  taken:    { label: '✅ Taken',     color: 'var(--success)'  },
+  snoozed:  { label: '⏰ Snoozed',  color: 'var(--primary)'  },
+  skipped:  { label: '⏭️ Skipped',  color: 'var(--text-muted)' },
+  missed:   { label: '❌ Missed',   color: 'var(--danger)'   },
+};
 
-function timeToMinutes(t) {
-  const [h, m] = t.split(':').map(Number);
-  return h * 60 + m;
-}
-
-function formatTime(t) {
-  const [h, m] = t.split(':').map(Number);
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  const hour   = h % 12 || 12;
-  return `${hour}:${String(m).padStart(2, '0')} ${suffix}`;
+function formatDateTime(iso) {
+  return new Date(iso).toLocaleString('en-IN', {
+    dateStyle: 'medium', timeStyle: 'short',
+  });
 }
 
 export default function RemindersPage() {
   const { user } = useAuth();
-  const [medicines, setMedicines] = useState([]);
-  const [loading, setLoading]     = useState(true);
+  const userId = user?.uid || 'demo';
 
-  // Global notification settings
-  const [settings, setSettings] = useState({
-    enabled:        true,
-    advanceMinutes: 5,
-    snooze:         15,
-    escalate:       true,
-    escalateAfter:  15,
-    sound:          'Default',
-    caregiverAlert: true,
+  // ── Reminders list ─────────────────────────────────────────────────────
+  const [reminders,     setReminders]     = useState([]);
+  const [missedAlerts,  setMissedAlerts]  = useState([]); // missed on load
+  const [activeAlert,   setActiveAlert]   = useState(null); // in-app reminder alert
+
+  // ── Create form ────────────────────────────────────────────────────────
+  const [form, setForm] = useState({
+    medicineName:  '',
+    scheduledTime: '',
   });
+  const [formError, setFormError] = useState('');
+  const [creating,  setCreating]  = useState(false);
 
-  const setSetting = (k, v) => setSettings((s) => ({ ...s, [k]: v }));
+  // ── Notification permission ────────────────────────────────────────────
+  const [notifPermission, setNotifPermission] = useState('default');
 
-  // Per-medicine overrides
-  const [overrides, setOverrides] = useState({});
-  const setOverride = (medId, k, v) =>
-    setOverrides((o) => ({ ...o, [medId]: { ...(o[medId] || {}), [k]: v } }));
+  // ─── Engine cleanup ref ───────────────────────────────────────────────
+  const stopEngineRef = useRef(null);
 
-  const [saved, setSaved] = useState(false);
-
-  // ── Load medicines ──
+  // ─────────────────────────────────────────────────────────────────────
+  // Load reminders + detect missed + start engine
+  // ─────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!user) {
-      setMedicines([
-        { id: '1', name: 'Metformin',  times: ['08:00', '20:00'], category: 'Chronic' },
-        { id: '2', name: 'Aspirin',    times: ['09:00'],           category: 'Chronic' },
-        { id: '3', name: 'Vitamin D3', times: ['08:00'],           category: 'Vitamin' },
-      ]);
-      setLoading(false);
-      return;
-    }
-    const unsub = subscribeMedicines(user.uid, (meds) => {
-      setMedicines(meds);
-      setLoading(false);
-    });
-    return () => unsub();
-  }, [user]);
+    // 1. Detect missed reminders from the last session
+    const missed = collectMissedReminders(userId);
+    if (missed.length > 0) setMissedAlerts(missed);
 
-  // ── Request permission & save ──
-  const handleSave = async () => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      const perm = await Notification.requestPermission();
-      if (perm !== 'granted') {
-        alert('⚠️ Please allow notifications in your browser to receive reminders.');
-        return;
-      }
+    // 2. Load all reminders
+    setReminders(getReminders(userId));
+
+    // 3. Register in-app alert callback
+    setInAppAlertHandler((reminder) => {
+      setActiveAlert(reminder);
+      setReminders(getReminders(userId)); // refresh list
+    });
+
+    // 4. Start engine
+    stopEngineRef.current = startReminderEngine(userId);
+
+    // 5. Check notification permission
+    if ('Notification' in window) {
+      setNotifPermission(Notification.permission);
     }
-    // In a real app: save settings to Firestore + register FCM token
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+
+    return () => {
+      // Cleanup engine on unmount
+      if (stopEngineRef.current) stopEngineRef.current();
+      setInAppAlertHandler(null);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Notification permission request
+  // ─────────────────────────────────────────────────────────────────────
+  const requestPermission = async () => {
+    if (!('Notification' in window)) return;
+    const perm = await Notification.requestPermission();
+    setNotifPermission(perm);
   };
 
-  // Build sorted reminder list from medicines
-  const allReminders = medicines.flatMap((med) =>
-    (med.times || []).map((t) => ({
-      medId:    med.id,
-      medName:  med.name,
-      time:     t,
-      category: med.category,
-      overrideEnabled: overrides[med.id]?.enabled,
-    }))
-  ).sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
+  // ─────────────────────────────────────────────────────────────────────
+  // Create reminder
+  // ─────────────────────────────────────────────────────────────────────
+  const handleCreate = useCallback(() => {
+    setFormError('');
+    if (!form.medicineName.trim()) { setFormError('Enter medicine name.'); return; }
+    if (!form.scheduledTime)       { setFormError('Select a date & time.'); return; }
 
+    const due = new Date(form.scheduledTime);
+    if (due <= new Date()) { setFormError('Scheduled time must be in the future.'); return; }
+
+    setCreating(true);
+    const r = createReminder({ userId, medicineName: form.medicineName, scheduledTime: form.scheduledTime });
+    setReminders(getReminders(userId));
+    setForm({ medicineName: '', scheduledTime: '' });
+    setCreating(false);
+
+    console.log('[Reminders] Created:', r);
+  }, [form, userId]);
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Alert actions: Taken / Snooze / Skip
+  // ─────────────────────────────────────────────────────────────────────
+  const handleTaken = useCallback((reminder) => {
+    cancelReminderTimers(reminder.id);
+    updateReminder(reminder.id, { status: 'taken' });
+    setReminders(getReminders(userId));
+    setActiveAlert(null);
+  }, [userId]);
+
+  const handleSnooze = useCallback((reminder) => {
+    cancelReminderTimers(reminder.id);
+    const newTime = new Date(Date.now() + SNOOZE_MINUTES * 60_000).toISOString();
+    updateReminder(reminder.id, { status: 'pending', scheduledTime: newTime, retryCount: 0 });
+    setReminders(getReminders(userId));
+    setActiveAlert(null);
+  }, [userId]);
+
+  const handleSkip = useCallback((reminder) => {
+    cancelReminderTimers(reminder.id);
+    updateReminder(reminder.id, { status: 'skipped' });
+    setReminders(getReminders(userId));
+    setActiveAlert(null);
+  }, [userId]);
+
+  const handleDelete = useCallback((id) => {
+    cancelReminderTimers(id);
+    deleteReminder(id);
+    setReminders(getReminders(userId));
+  }, [userId]);
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────────────────
   return (
     <div className="flex-col gap-6 animate-fade-in">
-      {/* Header */}
+
+      {/* ── Page header ── */}
       <div className="page-header">
-        <h1 className="page-title">Reminders</h1>
-        <p className="page-subtitle">Configure when and how you get notified</p>
+        <h1 className="page-title">🔔 Reminders</h1>
+        <p className="page-subtitle">Create and manage medication reminders</p>
       </div>
 
-      {/* Notification master toggle */}
-      <div className="glass-card">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-bold">🔔 Notifications</p>
-            <p className="text-xs text-muted">Master switch for all medication reminders</p>
-          </div>
-          <button
-            onClick={() => setSetting('enabled', !settings.enabled)}
-            style={{
-              width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-              background: settings.enabled ? 'var(--success)' : 'var(--bg-glass)',
-              transition: 'background 0.2s',
-              position: 'relative',
-            }}
-          >
-            <div style={{
-              width: 22, height: 22, borderRadius: '50%', background: 'white',
-              position: 'absolute', top: 3,
-              left: settings.enabled ? 27 : 3,
-              transition: 'left 0.2s',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
-            }} />
-          </button>
-        </div>
-      </div>
-
-      {settings.enabled && (
-        <>
-          {/* Notification settings */}
-          <div className="glass-card flex-col gap-4">
-            <h3 className="font-bold">⚙️ Notification Settings</h3>
-
-            {/* Advance notice */}
-            <div>
-              <label className="input-label">Remind me before (minutes)</label>
-              <div className="flex gap-2 flex-wrap">
-                {[0, 5, 10, 15, 30].map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setSetting('advanceMinutes', m)}
-                    className="btn btn-sm"
-                    style={{
-                      background: settings.advanceMinutes === m ? 'var(--primary)' : 'var(--bg-glass)',
-                      color: settings.advanceMinutes === m ? 'white' : 'var(--text-secondary)',
-                      border: `1px solid ${settings.advanceMinutes === m ? 'var(--primary)' : 'var(--border)'}`,
-                    }}
-                  >
-                    {m === 0 ? 'At time' : `${m} min`}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Snooze duration */}
-            <div>
-              <label className="input-label">Default snooze duration</label>
-              <div className="flex gap-2 flex-wrap">
-                {SNOOZE_OPTIONS.map((o) => (
-                  <button
-                    key={o.value}
-                    onClick={() => setSetting('snooze', o.value)}
-                    className="btn btn-sm"
-                    style={{
-                      background: settings.snooze === o.value ? 'var(--primary)' : 'var(--bg-glass)',
-                      color: settings.snooze === o.value ? 'white' : 'var(--text-secondary)',
-                      border: `1px solid ${settings.snooze === o.value ? 'var(--primary)' : 'var(--border)'}`,
-                    }}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Notification sound */}
-            <div>
-              <label className="input-label">Sound</label>
-              <select
-                className="input"
-                value={settings.sound}
-                onChange={(e) => setSetting('sound', e.target.value)}
-              >
-                {SOUND_OPTIONS.map((s) => <option key={s}>{s}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* Escalating reminders */}
-          <div className="glass-card">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="font-bold">📢 Escalating Reminders</p>
-                <p className="text-xs text-muted">Resend notification if dose not marked after delay</p>
-              </div>
-              <button
-                onClick={() => setSetting('escalate', !settings.escalate)}
-                style={{
-                  width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-                  background: settings.escalate ? 'var(--success)' : 'var(--bg-glass)',
-                  transition: 'background 0.2s', position: 'relative',
-                }}
-              >
-                <div style={{
-                  width: 22, height: 22, borderRadius: '50%', background: 'white',
-                  position: 'absolute', top: 3,
-                  left: settings.escalate ? 27 : 3,
-                  transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
-                }} />
-              </button>
-            </div>
-            {settings.escalate && (
-              <div>
-                <label className="input-label">Resend after (minutes)</label>
-                <div className="flex gap-2">
-                  {[10, 15, 20, 30].map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setSetting('escalateAfter', m)}
-                      className="btn btn-sm"
-                      style={{
-                        background: settings.escalateAfter === m ? 'var(--warning)' : 'var(--bg-glass)',
-                        color: settings.escalateAfter === m ? 'white' : 'var(--text-secondary)',
-                        border: `1px solid ${settings.escalateAfter === m ? 'var(--warning)' : 'var(--border)'}`,
-                      }}
-                    >
-                      {m} min
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Caregiver alert */}
-          <div className="glass-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-bold">👥 Caregiver SMS Alert</p>
-                <p className="text-xs text-muted">Instantly notify caregiver when a dose is missed</p>
-              </div>
-              <button
-                onClick={() => setSetting('caregiverAlert', !settings.caregiverAlert)}
-                style={{
-                  width: 52, height: 28, borderRadius: 14, border: 'none', cursor: 'pointer',
-                  background: settings.caregiverAlert ? 'var(--primary)' : 'var(--bg-glass)',
-                  transition: 'background 0.2s', position: 'relative',
-                }}
-              >
-                <div style={{
-                  width: 22, height: 22, borderRadius: '50%', background: 'white',
-                  position: 'absolute', top: 3,
-                  left: settings.caregiverAlert ? 27 : 3,
-                  transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
-                }} />
-              </button>
-            </div>
-          </div>
-
-          {/* Today's reminder schedule */}
-          <div className="glass-card flex-col gap-3">
-            <h3 className="font-bold">📋 Today's Reminder Schedule</h3>
-            {loading && [1, 2, 3].map((i) => (
-              <div key={i} className="skeleton" style={{ height: 48, borderRadius: 8 }} />
-            ))}
-            {!loading && allReminders.length === 0 && (
-              <div className="text-center" style={{ padding: 'var(--space-8)' }}>
-                <div style={{ fontSize: '2rem', marginBottom: 8 }}>💊</div>
-                <p className="text-secondary text-sm">No medicines added yet</p>
-              </div>
-            )}
-            {allReminders.map((r, idx) => {
-              const isDisabled = overrides[r.medId]?.enabled === false;
-              return (
-                <div
-                  key={`${r.medId}-${r.time}-${idx}`}
-                  className="flex items-center justify-between"
-                  style={{
-                    padding: 'var(--space-3) var(--space-4)',
-                    background: 'var(--bg-glass)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border)',
-                    opacity: isDisabled ? 0.5 : 1,
-                    transition: 'opacity 0.2s',
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span style={{ fontSize: '1.2rem' }}>🔔</span>
-                    <div>
-                      <p className="font-bold text-sm">{formatTime(r.time)}</p>
-                      <p className="text-xs text-muted">{r.medName}</p>
-                    </div>
-                  </div>
-                  {/* Per-medicine toggle */}
-                  <button
-                    onClick={() => setOverride(r.medId, 'enabled', isDisabled ? undefined : false)}
-                    style={{
-                      width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
-                      background: !isDisabled ? 'var(--success)' : 'var(--bg-glass)',
-                      transition: 'background 0.2s', position: 'relative',
-                    }}
-                  >
-                    <div style={{
-                      width: 18, height: 18, borderRadius: '50%', background: 'white',
-                      position: 'absolute', top: 3,
-                      left: !isDisabled ? 23 : 3,
-                      transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                    }} />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-
-      {/* Save button */}
-      <button
-        onClick={handleSave}
-        className="btn btn-primary btn-lg w-full"
+      {/* ── Honest limitation banner (MANDATORY per spec) ── */}
+      <div
+        className="glass-card"
+        style={{
+          borderLeft: '4px solid var(--warning)',
+          padding: 'var(--space-4)',
+          background: 'rgba(255,190,0,0.08)',
+        }}
       >
-        {saved ? '✅ Settings Saved!' : '💾 Save Reminder Settings'}
-      </button>
-
-      {/* Info note */}
-      <div className="glass-card-primary flex items-start gap-3" style={{ padding: 'var(--space-4)' }}>
-        <span style={{ fontSize: '1.2rem' }}>ℹ️</span>
-        <p className="text-sm text-secondary">
-          For notifications to work even when the browser is closed, allow notification permissions and install MedManage as a PWA (Add to Home Screen).
+        <p className="text-sm" style={{ color: 'var(--warning)' }}>
+          ⚠️ <strong>Heads up:</strong> Reminders work best when the app is active and internet is
+          available. Offline support and advanced background alerts are coming soon.
         </p>
       </div>
+
+      {/* ── Missed reminders alert (detected on load) ── */}
+      {missedAlerts.length > 0 && (
+        <div
+          className="glass-card flex-col gap-3"
+          style={{ borderLeft: '4px solid var(--danger)' }}
+        >
+          <p className="font-bold" style={{ color: 'var(--danger)' }}>
+            ❌ Missed Medication{missedAlerts.length > 1 ? 's' : ''}
+          </p>
+          {missedAlerts.map((r) => (
+            <p key={r.id} className="text-sm text-secondary">
+              You missed <strong>{r.medicineName}</strong> scheduled at{' '}
+              {formatDateTime(r.scheduledTime)}.
+            </p>
+          ))}
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setMissedAlerts([])}
+            style={{ alignSelf: 'flex-start' }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* ── Notification permission ── */}
+      {notifPermission !== 'granted' && (
+        <div
+          className="glass-card flex items-center justify-between gap-4"
+          style={{ flexWrap: 'wrap' }}
+        >
+          <div>
+            <p className="font-bold text-sm">🔔 Enable Push Notifications</p>
+            <p className="text-xs text-muted">
+              Get reminders even if you switch tabs (requires browser permission).
+            </p>
+          </div>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={requestPermission}
+            disabled={notifPermission === 'denied'}
+          >
+            {notifPermission === 'denied' ? 'Blocked in browser' : 'Enable'}
+          </button>
+        </div>
+      )}
+
+      {/* ── Create reminder form ── */}
+      <div className="glass-card flex-col gap-4">
+        <h3 className="font-bold">➕ New Reminder</h3>
+
+        <div className="flex-col gap-3">
+          <div>
+            <label className="input-label">Medicine Name</label>
+            <input
+              id="reminder-medicine-name"
+              className="input"
+              placeholder="e.g. Metformin 500mg"
+              value={form.medicineName}
+              onChange={(e) => setForm((f) => ({ ...f, medicineName: e.target.value }))}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+            />
+          </div>
+          <div>
+            <label className="input-label">Date &amp; Time</label>
+            <input
+              id="reminder-scheduled-time"
+              className="input"
+              type="datetime-local"
+              value={form.scheduledTime}
+              min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)}
+              onChange={(e) => setForm((f) => ({ ...f, scheduledTime: e.target.value }))}
+            />
+          </div>
+        </div>
+
+        {formError && (
+          <p className="text-sm" style={{ color: 'var(--danger)' }}>{formError}</p>
+        )}
+
+        <button
+          id="create-reminder-btn"
+          className="btn btn-primary"
+          onClick={handleCreate}
+          disabled={creating}
+        >
+          {creating ? 'Adding...' : '✅ Add Reminder'}
+        </button>
+      </div>
+
+      {/* ── Reminder list ── */}
+      <div className="glass-card flex-col gap-3">
+        <h3 className="font-bold">📋 Your Reminders</h3>
+
+        {reminders.length === 0 && (
+          <div className="text-center" style={{ padding: 'var(--space-8)' }}>
+            <div style={{ fontSize: '2rem', marginBottom: 8 }}>🔔</div>
+            <p className="text-secondary text-sm">No reminders yet. Add one above.</p>
+          </div>
+        )}
+
+        {[...reminders]
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .map((r) => {
+            const st = STATUS_STYLES[r.status] || STATUS_STYLES.pending;
+            return (
+              <div
+                key={r.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 'var(--space-3)',
+                  padding: 'var(--space-3) var(--space-4)',
+                  background: 'var(--bg-glass)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <div className="flex-col gap-1" style={{ flex: 1 }}>
+                  <p className="font-bold text-sm">{r.medicineName}</p>
+                  <p className="text-xs text-muted">{formatDateTime(r.scheduledTime)}</p>
+                  {r.retryCount > 0 && (
+                    <p className="text-xs" style={{ color: 'var(--warning)' }}>
+                      Retry {r.retryCount}/{3}
+                    </p>
+                  )}
+                  <span
+                    className="badge"
+                    style={{
+                      background: st.color + '22',
+                      color: st.color,
+                      border: `1px solid ${st.color}`,
+                      alignSelf: 'flex-start',
+                      fontSize: '0.7rem',
+                    }}
+                  >
+                    {st.label}
+                  </span>
+                </div>
+
+                {/* Quick actions for pending reminders */}
+                <div className="flex gap-2" style={{ flexShrink: 0 }}>
+                  {r.status === 'pending' && (
+                    <>
+                      <button
+                        className="btn btn-sm"
+                        style={{ background: 'var(--success)', color: 'white', border: 'none' }}
+                        onClick={() => handleTaken(r)}
+                        title="Mark as Taken"
+                      >✅</button>
+                      <button
+                        className="btn btn-sm"
+                        style={{ background: 'var(--primary)', color: 'white', border: 'none' }}
+                        onClick={() => handleSnooze(r)}
+                        title={`Snooze ${SNOOZE_MINUTES} min`}
+                      >⏰</button>
+                      <button
+                        className="btn btn-sm"
+                        style={{ background: 'var(--bg-glass)', border: '1px solid var(--border)' }}
+                        onClick={() => handleSkip(r)}
+                        title="Skip"
+                      >⏭️</button>
+                    </>
+                  )}
+                  <button
+                    className="btn btn-sm"
+                    style={{ background: 'var(--danger-glow)', color: 'var(--danger)', border: 'none' }}
+                    onClick={() => handleDelete(r.id)}
+                    title="Delete"
+                  >🗑️</button>
+                </div>
+              </div>
+            );
+          })}
+      </div>
+
+      {/* ── In-app alert modal (fires when engine triggers a reminder) ── */}
+      {activeAlert && (
+        <div
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.7)',
+            zIndex: 200,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 'var(--space-5)',
+            backdropFilter: 'blur(6px)',
+          }}
+        >
+          <div
+            className="glass-card flex-col gap-5"
+            style={{
+              maxWidth: 400, width: '100%',
+              border: '2px solid var(--warning)',
+              animation: 'fadeIn 0.3s ease',
+            }}
+          >
+            <div className="text-center">
+              <div style={{ fontSize: '3rem', marginBottom: 8 }}>💊</div>
+              <h2 className="font-bold" style={{ fontSize: '1.3rem' }}>Medication Reminder</h2>
+              <p className="text-secondary mt-2">
+                Time to take <strong>{activeAlert.medicineName}</strong>
+              </p>
+              {activeAlert.retryCount > 0 && (
+                <p className="text-sm" style={{ color: 'var(--warning)', marginTop: 4 }}>
+                  Retry {activeAlert.retryCount} of {3}
+                </p>
+              )}
+            </div>
+
+            <div className="flex-col gap-3">
+              <button
+                id="alert-taken-btn"
+                className="btn btn-primary btn-lg w-full"
+                style={{ background: 'var(--success)' }}
+                onClick={() => handleTaken(activeAlert)}
+              >
+                ✅ Mark as Taken
+              </button>
+              <button
+                id="alert-snooze-btn"
+                className="btn btn-lg w-full"
+                style={{ background: 'var(--primary)', color: 'white' }}
+                onClick={() => handleSnooze(activeAlert)}
+              >
+                ⏰ Snooze {SNOOZE_MINUTES} Minutes
+              </button>
+              <button
+                id="alert-skip-btn"
+                className="btn btn-ghost btn-lg w-full"
+                onClick={() => handleSkip(activeAlert)}
+              >
+                ⏭️ Skip This Dose
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

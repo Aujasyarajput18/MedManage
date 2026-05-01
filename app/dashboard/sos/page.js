@@ -1,29 +1,45 @@
 'use client';
+/**
+ * app/dashboard/sos/page.js  [UPDATED]
+ *
+ * Changes:
+ * - Shows SMS cost preview before SOS fires (₹5 × contacts)
+ * - Shows per-contact SMS delivery result after trigger
+ * - "Test SMS" button to send a test without full SOS hold
+ * - Wallet balance check on page load
+ * - Phone number format hint in contact form
+ */
+
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { subscribeSOSContacts, addSOSContact, deleteSOSContact, logSOS } from '@/lib/firestore';
 import styles from './sos.module.css';
 
 const HOLD_DURATION = 3000; // 3 seconds
+const SMS_COST_PER_MSG = 5; // ₹5 per SMS via Fast2SMS
 
 export default function SOSPage() {
   const { user } = useAuth();
   const [contacts, setContacts] = useState([
-    { id: 'demo1', name: 'Mom', phone: '+91 98765 43210' },
-    { id: 'demo2', name: 'Dad', phone: '+91 87654 32109' },
+    { id: 'demo1', name: 'Mom', phone: '9876543210' },
+    { id: 'demo2', name: 'Dad', phone: '8765432109' },
   ]);
-  const [holding, setHolding] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [triggered, setTriggered] = useState(false);
-  const [location, setLocation] = useState(null);
+  const [holding,        setHolding]        = useState(false);
+  const [progress,       setProgress]       = useState(0);
+  const [triggered,      setTriggered]      = useState(false);
+  const [location,       setLocation]       = useState(null);
   const [showAddContact, setShowAddContact] = useState(false);
-  const [newContact, setNewContact] = useState({ name: '', phone: '' });
-  const [sending, setSending] = useState(false);
+  const [newContact,     setNewContact]     = useState({ name: '', phone: '' });
+  const [sending,        setSending]        = useState(false);
+  const [sosResult,      setSosResult]      = useState(null);  // API response
+  const [smsBalance,     setSmsBalance]     = useState(null);  // wallet balance
+  const [testSending,    setTestSending]    = useState(false);
+  const [phoneError,     setPhoneError]     = useState('');
 
-  const intervalRef = useRef(null);
+  const intervalRef  = useRef(null);
   const startTimeRef = useRef(null);
 
-  // Load real contacts from Firestore
+  // ── Load real contacts from Firestore ──────────────────────────────────
   useEffect(() => {
     if (!user) return;
     const unsub = subscribeSOSContacts(user.uid, (c) => {
@@ -32,7 +48,7 @@ export default function SOSPage() {
     return () => unsub();
   }, [user]);
 
-  // Get location on mount
+  // ── Get GPS location on mount ──────────────────────────────────────────
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -42,6 +58,26 @@ export default function SOSPage() {
     }
   }, []);
 
+  // ── Check Fast2SMS wallet balance on mount ─────────────────────────────
+  useEffect(() => {
+    fetch('/api/sos/send')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.configured && d.balance !== undefined) {
+          setSmsBalance(d.balance);
+        }
+      })
+      .catch(() => {}); // silently ignore
+  }, []);
+
+  // ── Phone validation (Indian mobile: 10 digits, starts 6-9) ───────────
+  function validatePhone(raw) {
+    const digits = String(raw).replace(/\D/g, '').replace(/^91/, '');
+    if (/^[6-9]\d{9}$/.test(digits)) return digits;
+    return null;
+  }
+
+  // ── SOS hold logic ─────────────────────────────────────────────────────
   const startHold = () => {
     if (triggered) return;
     setHolding(true);
@@ -63,40 +99,71 @@ export default function SOSPage() {
     setProgress(0);
   };
 
+  // ── Main SOS trigger ───────────────────────────────────────────────────
   const triggerSOS = async () => {
     setHolding(false);
     setTriggered(true);
     setSending(true);
+    setSosResult(null);
 
-    // Log SOS event
+    // Log to Firestore
     if (user && location) {
       await logSOS(user.uid, location).catch(() => {});
     }
 
-    // Call SOS API
-    try {
-      await fetch('/api/sos/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userName: user?.displayName || 'User',
-          contacts,
-          location,
-        }),
-      });
-    } catch (err) {
-      console.error('SOS send failed:', err);
-    }
-
+    await sendSMSAlert({ userName: user?.displayName || 'MedManage User' });
     setSending(false);
   };
 
+  // ── Shared SMS send function ───────────────────────────────────────────
+  const sendSMSAlert = async ({ userName, isTest = false }) => {
+    try {
+      const res = await fetch('/api/sos/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userName: isTest ? `${userName} (TEST)` : userName,
+          contacts,
+          location: isTest ? null : location,
+        }),
+      });
+      const data = await res.json();
+      setSosResult({ ...data, isTest });
+      return data;
+    } catch (err) {
+      setSosResult({ success: false, error: err.message, isTest });
+      return null;
+    }
+  };
+
+  // ── Test SMS button ────────────────────────────────────────────────────
+  const handleTestSMS = async () => {
+    if (contacts.length === 0) return;
+    setTestSending(true);
+    setSosResult(null);
+    await sendSMSAlert({
+      userName: user?.displayName || 'MedManage User',
+      isTest: true,
+    });
+    setTestSending(false);
+  };
+
+  // ── Add contact ────────────────────────────────────────────────────────
   const handleAddContact = async () => {
-    if (!newContact.name || !newContact.phone) return;
+    setPhoneError('');
+    if (!newContact.name.trim() || !newContact.phone.trim()) return;
+
+    const validNum = validatePhone(newContact.phone);
+    if (!validNum) {
+      setPhoneError('Enter a valid 10-digit Indian mobile number (starts with 6–9).');
+      return;
+    }
+
+    const contact = { name: newContact.name.trim(), phone: validNum };
     if (user) {
-      await addSOSContact(user.uid, newContact);
+      await addSOSContact(user.uid, contact);
     } else {
-      setContacts((prev) => [...prev, { id: Date.now().toString(), ...newContact }]);
+      setContacts((prev) => [...prev, { id: Date.now().toString(), ...contact }]);
     }
     setNewContact({ name: '', phone: '' });
     setShowAddContact(false);
@@ -110,39 +177,84 @@ export default function SOSPage() {
     }
   };
 
+  // ── Triggered / result screen ──────────────────────────────────────────
   if (triggered) {
     return (
       <div className={`animate-fade-in flex-col items-center ${styles.triggeredWrap}`}>
-        <div className={styles.triggeredIcon}>✅</div>
-        <h1 className={styles.triggeredTitle}>SOS Alert Sent!</h1>
-        <p className="text-secondary text-center mb-6">
-          Emergency message sent to {contacts.length} contact{contacts.length > 1 ? 's' : ''} with your location.
-        </p>
-        {location && (
-          <a
-            href={`https://maps.google.com/?q=${location.lat},${location.lng}`}
-            target="_blank"
-            rel="noreferrer"
-            className="badge badge-success mb-6"
-            style={{ padding: '8px 16px' }}
-          >
-            📍 Your location: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
-          </a>
+        <div className={styles.triggeredIcon}>{sending ? '📡' : '✅'}</div>
+        <h1 className={styles.triggeredTitle}>
+          {sending ? 'Sending SOS...' : 'SOS Alert Sent!'}
+        </h1>
+
+        {!sending && sosResult && (
+          <>
+            {/* SMS result card */}
+            <div
+              className="glass-card w-full flex-col gap-3 mb-4"
+              style={{ borderLeft: `4px solid ${sosResult.smsSent ? 'var(--success)' : sosResult.devMode ? 'var(--warning)' : 'var(--danger)'}` }}
+            >
+              {sosResult.devMode && (
+                <p className="text-sm" style={{ color: 'var(--warning)' }}>
+                  ⚠️ <strong>Dev mode:</strong> No API key set — SMS was NOT actually sent.
+                  Add <code>FAST2SMS_API_KEY</code> to .env.local to enable.
+                </p>
+              )}
+              {sosResult.smsSent && (
+                <p className="text-sm" style={{ color: 'var(--success)' }}>
+                  ✅ SMS sent to <strong>{sosResult.valid}</strong> contact{sosResult.valid > 1 ? 's' : ''} via Fast2SMS
+                </p>
+              )}
+              {sosResult.invalid?.length > 0 && (
+                <p className="text-sm" style={{ color: 'var(--danger)' }}>
+                  ❌ {sosResult.invalid.length} invalid number{sosResult.invalid.length > 1 ? 's' : ''} skipped:{' '}
+                  {sosResult.invalid.map((c) => c.name).join(', ')}
+                </p>
+              )}
+              {sosResult.error && !sosResult.devMode && (
+                <p className="text-sm" style={{ color: 'var(--danger)' }}>
+                  Error: {sosResult.error}
+                </p>
+              )}
+            </div>
+
+            {/* Message preview */}
+            <div className="glass-card w-full text-center mb-4">
+              <p className="text-xs text-muted mb-1">Message sent:</p>
+              <p className="text-sm font-bold">{sosResult.message}</p>
+            </div>
+
+            {/* Location link */}
+            {location && (
+              <a
+                href={`https://maps.google.com/?q=${location.lat},${location.lng}`}
+                target="_blank"
+                rel="noreferrer"
+                className="badge badge-success mb-4"
+                style={{ padding: '8px 16px' }}
+              >
+                📍 Your location: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+              </a>
+            )}
+          </>
         )}
-        <div className="glass-card w-full text-center mb-6">
-          <p className="text-sm text-secondary">Message sent:</p>
-          <p className="font-bold mt-2">
-            🚨 {user?.displayName || 'User'} needs help!
-            {location && ` Location: maps.google.com/?q=${location.lat.toFixed(4)},${location.lng.toFixed(4)}`}
+
+        {sending && (
+          <p className="text-secondary text-sm mb-6">
+            Sending emergency SMS to {contacts.length} contact{contacts.length > 1 ? 's' : ''}...
           </p>
-        </div>
-        <button className="btn btn-ghost w-full" onClick={() => { setTriggered(false); setProgress(0); }}>
+        )}
+
+        <button
+          className="btn btn-ghost w-full"
+          onClick={() => { setTriggered(false); setProgress(0); setSosResult(null); }}
+        >
           ← Back to SOS
         </button>
       </div>
     );
   }
 
+  // ── Main SOS screen ────────────────────────────────────────────────────
   return (
     <div className="flex-col gap-6 animate-fade-in">
       <div className="page-header">
@@ -150,19 +262,54 @@ export default function SOSPage() {
         <p className="page-subtitle">Hold the button for 3 seconds to send an alert</p>
       </div>
 
-      {/* Location status */}
-      <div className={`badge ${location ? 'badge-success' : 'badge-warning'}`} style={{ width: '100%', justifyContent: 'center', padding: '8px' }}>
-        {location ? `📍 Location ready: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}` : '📍 Location unavailable — enable GPS for best results'}
+      {/* ── SMS balance badge ── */}
+      {smsBalance !== null && (
+        <div
+          className={`badge ${smsBalance >= SMS_COST_PER_MSG * contacts.length ? 'badge-success' : 'badge-warning'}`}
+          style={{ width: '100%', justifyContent: 'center', padding: '8px' }}
+        >
+          💳 Fast2SMS Balance: ₹{smsBalance}
+          {smsBalance < SMS_COST_PER_MSG * contacts.length && (
+            <span style={{ marginLeft: 8 }}>
+              — ⚠️ Low (need ₹{SMS_COST_PER_MSG * contacts.length} for {contacts.length} SMS)
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* ── Location status ── */}
+      <div
+        className={`badge ${location ? 'badge-success' : 'badge-warning'}`}
+        style={{ width: '100%', justifyContent: 'center', padding: '8px' }}
+      >
+        {location
+          ? `📍 Location ready: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`
+          : '📍 Location unavailable — enable GPS for best results'}
       </div>
 
-      {/* SOS Button */}
+      {/* ── SMS cost preview ── */}
+      {contacts.length > 0 && (
+        <div
+          className="glass-card text-sm"
+          style={{
+            background: 'rgba(108,99,255,0.08)',
+            border: '1px solid var(--primary)',
+            padding: 'var(--space-3) var(--space-4)',
+          }}
+        >
+          <p style={{ color: 'var(--primary)', fontWeight: 600 }}>
+            📱 Will send {contacts.length} SMS × ₹{SMS_COST_PER_MSG} ={' '}
+            <strong>₹{contacts.length * SMS_COST_PER_MSG}</strong> per SOS trigger
+          </p>
+        </div>
+      )}
+
+      {/* ── SOS Button ── */}
       <div className={styles.sosWrap}>
-        {/* Pulse rings (always on) */}
         <div className={styles.pulseRing} style={{ animationDelay: '0s' }} />
         <div className={styles.pulseRing} style={{ animationDelay: '0.6s' }} />
         <div className={styles.pulseRing} style={{ animationDelay: '1.2s' }} />
 
-        {/* Circular progress overlay */}
         <svg className={styles.progressSvg} viewBox="0 0 200 200">
           <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255,71,87,0.15)" strokeWidth="8" />
           <circle
@@ -178,7 +325,6 @@ export default function SOSPage() {
           />
         </svg>
 
-        {/* Main button */}
         <button
           className={`${styles.sosBtn} ${holding ? styles.holding : ''}`}
           onMouseDown={startHold}
@@ -189,67 +335,146 @@ export default function SOSPage() {
         >
           <span className={styles.sosBtnIcon}>🆘</span>
           <span className={styles.sosBtnText}>
-            {holding ? `${Math.ceil(((HOLD_DURATION - (Date.now() - (startTimeRef.current || Date.now()))) / 1000))}` : 'SOS'}
+            {holding
+              ? `${Math.ceil(((HOLD_DURATION - (Date.now() - (startTimeRef.current || Date.now()))) / 1000))}`
+              : 'SOS'}
           </span>
-          <span className={styles.sosBtnSub}>
-            {holding ? 'Hold...' : 'HOLD 3 SEC'}
-          </span>
+          <span className={styles.sosBtnSub}>{holding ? 'Hold...' : 'HOLD 3 SEC'}</span>
         </button>
       </div>
 
       <p className="text-center text-muted text-sm">
-        Release to cancel • Hold 3 seconds to send emergency alert
+        Release to cancel • Hold 3 seconds to send emergency SMS
       </p>
 
-      {/* Emergency contacts */}
+      {/* ── Emergency contacts ── */}
       <div className="glass-card flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold">Emergency Contacts ({contacts.length})</h3>
+          <h3 className="font-bold">📞 Emergency Contacts ({contacts.length})</h3>
           <button onClick={() => setShowAddContact(!showAddContact)} className="btn btn-ghost btn-sm">
             + Add
           </button>
         </div>
 
         {showAddContact && (
-          <div className="flex-col gap-3" style={{ background: 'var(--bg-glass)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)' }}>
-            <input className="input" placeholder="Name" value={newContact.name} onChange={(e) => setNewContact((p) => ({ ...p, name: e.target.value }))} />
-            <input className="input" placeholder="Phone (+91XXXXXXXXXX)" value={newContact.phone} onChange={(e) => setNewContact((p) => ({ ...p, phone: e.target.value }))} />
+          <div
+            className="flex-col gap-3"
+            style={{ background: 'var(--bg-glass)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)' }}
+          >
+            <input
+              className="input"
+              placeholder="Name (e.g. Mom)"
+              value={newContact.name}
+              onChange={(e) => setNewContact((p) => ({ ...p, name: e.target.value }))}
+            />
+            <div>
+              <input
+                className="input"
+                placeholder="Mobile number (e.g. 9876543210)"
+                value={newContact.phone}
+                maxLength={13}
+                onChange={(e) => {
+                  setPhoneError('');
+                  setNewContact((p) => ({ ...p, phone: e.target.value }));
+                }}
+              />
+              {phoneError && (
+                <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>{phoneError}</p>
+              )}
+              <p className="text-xs text-muted mt-1">Indian mobile only (10 digits, starts with 6–9)</p>
+            </div>
             <div className="flex gap-2">
               <button onClick={handleAddContact} className="btn btn-primary btn-sm">Add Contact</button>
-              <button onClick={() => setShowAddContact(false)} className="btn btn-ghost btn-sm">Cancel</button>
+              <button onClick={() => { setShowAddContact(false); setPhoneError(''); }} className="btn btn-ghost btn-sm">Cancel</button>
             </div>
           </div>
         )}
 
         {contacts.length === 0 && (
-          <p className="text-muted text-sm text-center">No contacts added. Add at least one emergency contact.</p>
+          <p className="text-muted text-sm text-center">
+            No contacts added. Add at least one emergency contact.
+          </p>
         )}
 
         {contacts.map((c) => (
           <div key={c.id} className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="btn-icon" style={{ background: 'var(--danger-glow)', color: 'var(--danger)', fontSize: '1rem' }}>
-                {c.name.charAt(0)}
+              <div
+                className="btn-icon"
+                style={{ background: 'var(--danger-glow)', color: 'var(--danger)', fontSize: '1rem' }}
+              >
+                {c.name.charAt(0).toUpperCase()}
               </div>
               <div>
                 <div className="font-bold text-sm">{c.name}</div>
-                <div className="text-xs text-muted">{c.phone}</div>
+                <div className="text-xs text-muted">+91 {c.phone}</div>
               </div>
             </div>
-            <button onClick={() => handleDeleteContact(c.id)} style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
+            <button
+              onClick={() => handleDeleteContact(c.id)}
+              style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.2rem' }}
+            >
+              ×
+            </button>
           </div>
         ))}
       </div>
 
-      {/* Info */}
+      {/* ── Test SMS button ── */}
+      {contacts.length > 0 && (
+        <div className="glass-card flex-col gap-3">
+          <p className="font-bold text-sm">🧪 Test SMS</p>
+          <p className="text-xs text-muted">
+            Send a test message to verify your contacts receive it. Costs ₹{contacts.length * SMS_COST_PER_MSG}.
+          </p>
+
+          {sosResult?.isTest && (
+            <div
+              style={{
+                padding: 'var(--space-3)',
+                borderRadius: 'var(--radius-md)',
+                background: sosResult.smsSent ? 'rgba(67,217,173,0.1)' : 'rgba(255,71,87,0.1)',
+                border: `1px solid ${sosResult.smsSent ? 'var(--success)' : sosResult.devMode ? 'var(--warning)' : 'var(--danger)'}`,
+              }}
+            >
+              {sosResult.devMode && (
+                <p className="text-xs" style={{ color: 'var(--warning)' }}>
+                  ⚠️ Dev mode — no FAST2SMS_API_KEY set. Add it to .env.local.
+                </p>
+              )}
+              {sosResult.smsSent && (
+                <p className="text-xs" style={{ color: 'var(--success)' }}>
+                  ✅ Test SMS sent to {sosResult.valid} number{sosResult.valid > 1 ? 's' : ''} successfully!
+                </p>
+              )}
+              {sosResult.error && !sosResult.devMode && (
+                <p className="text-xs" style={{ color: 'var(--danger)' }}>Error: {sosResult.error}</p>
+              )}
+            </div>
+          )}
+
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={handleTestSMS}
+            disabled={testSending}
+          >
+            {testSending ? '📡 Sending...' : `📲 Send Test SMS (₹${contacts.length * SMS_COST_PER_MSG})`}
+          </button>
+        </div>
+      )}
+
+      {/* ── Info card ── */}
       <div className="glass-card text-sm" style={{ color: 'var(--text-secondary)' }}>
         <p className="font-bold mb-2">📱 What happens when SOS triggers:</p>
         <ol style={{ paddingLeft: '1.2rem', lineHeight: 2 }}>
           <li>Your live GPS location is captured</li>
-          <li>An SMS is sent to all emergency contacts</li>
-          <li>SMS includes a Google Maps link to your location</li>
-          <li>A log is saved in your SOS history</li>
+          <li>SMS sent to all {contacts.length} emergency contact{contacts.length !== 1 ? 's' : ''} via Fast2SMS</li>
+          <li>SMS includes Google Maps link to your exact location</li>
+          <li>Event is logged in your SOS history</li>
         </ol>
+        <p className="text-xs mt-3" style={{ color: 'var(--text-muted)' }}>
+          Cost: ₹{SMS_COST_PER_MSG}/SMS via Fast2SMS · Requires FAST2SMS_API_KEY in .env.local
+        </p>
       </div>
     </div>
   );

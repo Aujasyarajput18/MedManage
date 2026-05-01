@@ -1,67 +1,56 @@
-let claude = null;
-try {
-  const Anthropic = require('@anthropic-ai/sdk').default;
-  if (process.env.CLAUDE_API_KEY) {
-    claude = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
-  }
-} catch (e) {
-  // SDK not installed
-}
+/**
+ * app/api/ai/identify-pill/route.js  [UPDATED — Gemini Vision]
+ *
+ * Pill photo identifier using Gemini 1.5 Flash vision.
+ * Accepts a base64-encoded image and returns medicine details.
+ */
+
+import { NextResponse }                         from 'next/server';
+import { geminiVision, isGeminiConfigured }     from '@/lib/gemini';
+
+const DEMO_RESULT = {
+  name:       'Metformin',
+  dosage:     '500mg',
+  category:   'Chronic',
+  notes:      'Demo identification — add GEMINI_API_KEY to .env.local for real AI vision.',
+  confidence: 'demo',
+};
 
 export async function POST(request) {
-  const { image, mimeType } = await request.json();
+  const { image, mimeType = 'image/jpeg' } = await request.json();
 
-  // Demo fallback when no Claude API
-  if (!claude || !image) {
-    return Response.json({
-      name:     'Metformin',
-      dosage:   '500mg',
-      category: 'Chronic',
-      notes:    'Demo identification. Add your Claude API key for real AI vision.',
-      confidence: 'demo',
-    });
+  if (!image) {
+    return NextResponse.json({ error: 'No image provided' }, { status: 400 });
   }
 
-  try {
-    const msg = await claude.messages.create({
-      model: 'claude-opus-4-5',
-      max_tokens: 400,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: mimeType || 'image/jpeg',
-              data: image,
-            },
-          },
-          {
-            type: 'text',
-            text: `You are a medicine identifier. Look at this image and identify the medicine.
-Return ONLY a JSON object with these fields (no markdown, no explanation):
+  // Demo fallback
+  if (!isGeminiConfigured()) {
+    return NextResponse.json(DEMO_RESULT);
+  }
+
+  const prompt = `You are a medicine identifier. Look at this image carefully.
+If it shows a medicine, pill, tablet, capsule, or medicine box/strip, identify it.
+Return ONLY a JSON object — no markdown, no explanation:
 {
   "name": "medicine name",
-  "dosage": "dosage like 500mg or 10ml",
+  "dosage": "dosage like 500mg or 10ml (empty string if not visible)",
   "category": "Chronic or Acute or Vitamin or Supplement or Ayurvedic",
-  "notes": "one short sentence about this medicine in plain language"
+  "notes": "one short plain-language sentence about this medicine"
 }
-If you cannot identify it, return {"name": "Unknown", "dosage": "", "category": "", "notes": "Could not identify. Please try a clearer photo."}`,
-          },
-        ],
-      }],
-    });
+If you cannot identify it, return: {"name": "Unknown", "dosage": "", "category": "", "notes": "Could not identify. Please try a clearer photo of the medicine name."}`;
 
-    const raw  = msg.content[0].text.trim();
-    const json = JSON.parse(raw.replace(/```json|```/g, '').trim());
-    return Response.json(json);
-  } catch (e) {
-    return Response.json({
-      name: 'Unknown',
-      dosage: '',
+  try {
+    const raw  = await geminiVision(image, mimeType, prompt);
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const json  = JSON.parse(clean.match(/\{[\s\S]*\}/)[0]);
+    return NextResponse.json(json);
+  } catch (err) {
+    console.error('[AI/identify-pill] Gemini error:', err.message);
+    return NextResponse.json({
+      name:     'Unknown',
+      dosage:   '',
       category: '',
-      notes: 'Could not identify. Please try a clearer photo of the medicine name.',
+      notes:    'Could not identify. Please try a clearer photo of the medicine name.',
     });
   }
 }

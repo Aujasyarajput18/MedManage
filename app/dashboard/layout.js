@@ -1,10 +1,13 @@
 'use client';
-import { useEffect, useState } from 'react';
+// [UPDATED] — added reminder engine startup + background action polling
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import FloatingSOS from '@/components/ui/FloatingSOS';
+import { startReminderEngine, cancelReminderTimers } from '@/lib/reminderEngine';
+import { updateReminder, getReminders }               from '@/lib/reminderStore';
 import styles from './layout.module.css';
 
 const NAV_ITEMS = [
@@ -33,6 +36,7 @@ export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const [isDemo, setIsDemo] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const stopEngineRef = useRef(null); // [NEW] cleanup handle for reminder engine
 
   useEffect(() => {
     const urlDemo   = typeof window !== 'undefined' && window.location.search.includes('demo=true');
@@ -43,6 +47,50 @@ export default function DashboardLayout({ children }) {
       router.replace('/auth/login');
     }
   }, [user, loading, router]);
+
+  // [NEW] Start the reminder engine once user is known
+  useEffect(() => {
+    if (loading) return;
+    const userId = user?.uid || (isDemo ? 'demo' : null);
+    if (!userId) return;
+
+    // Start engine — returns cleanup function
+    stopEngineRef.current = startReminderEngine(userId);
+
+    // Poll for SW background actions every 30s
+    // (applies Taken/Snooze/Skip tapped from notification bar while app was closed)
+    const pollActions = async () => {
+      try {
+        const res = await fetch('/api/reminders/action');
+        if (!res.ok) return;
+        const { actions } = await res.json();
+        Object.entries(actions).forEach(([reminderId, { action }]) => {
+          if (action === 'taken') {
+            cancelReminderTimers(reminderId);
+            updateReminder(reminderId, { status: 'taken' });
+          } else if (action === 'snooze') {
+            cancelReminderTimers(reminderId);
+            const newTime = new Date(Date.now() + 10 * 60_000).toISOString();
+            updateReminder(reminderId, { status: 'pending', scheduledTime: newTime, retryCount: 0 });
+          } else if (action === 'skip') {
+            cancelReminderTimers(reminderId);
+            updateReminder(reminderId, { status: 'skipped' });
+          }
+        });
+      } catch {
+        // Network failure — silently ignore (app still works in-tab)
+      }
+    };
+
+    pollActions(); // immediate check on mount
+    const pollInterval = setInterval(pollActions, 30_000);
+
+    return () => {
+      if (stopEngineRef.current) stopEngineRef.current();
+      clearInterval(pollInterval);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading, isDemo]);
 
   // Close more sheet on route change
   useEffect(() => { setShowMore(false); }, [pathname]);
