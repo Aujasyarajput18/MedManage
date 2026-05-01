@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signUpWithEmail, signInWithGoogle } from '@/lib/auth';
+import { clearDemoData } from '@/lib/demo';
 
 export default function SignUpPage() {
   const [name, setName] = useState('');
@@ -18,6 +19,7 @@ export default function SignUpPage() {
     setLoading(true);
     try {
       await signUpWithEmail(email, password, name);
+      clearDemoData();
       router.push('/dashboard');
     } catch (err) {
       setError(err.message || 'Failed to create account');
@@ -28,6 +30,7 @@ export default function SignUpPage() {
   const handleGoogle = async () => {
     try {
       await signInWithGoogle();
+      clearDemoData();
       router.push('/dashboard');
     } catch (err) {
       setError(err.message || 'Google sign-up failed');

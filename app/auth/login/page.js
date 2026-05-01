@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signInWithEmail, signInWithGoogle, resetPassword } from '@/lib/auth';
+import { clearDemoData } from '@/lib/demo';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -17,6 +18,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithEmail(email, password);
+      clearDemoData();
       router.push('/dashboard');
     } catch (err) {
       setError(err.message || 'Failed to login');
@@ -27,6 +29,7 @@ export default function LoginPage() {
   const handleGoogle = async () => {
     try {
       await signInWithGoogle();
+      clearDemoData();
       router.push('/dashboard');
     } catch (err) {
       setError(err.message || 'Google sign-in failed');
