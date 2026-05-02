@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { subscribeMedicines, logDose } from '@/lib/firestore';
+import { getDemoMedicines, isDemoMode, updateDemoMedicine } from '@/lib/demo';
 import styles from './medicines.module.css';
 
 const CATEGORY_COLORS = {
@@ -14,37 +15,53 @@ const CATEGORY_COLORS = {
 };
 
 export default function MedicinesPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [medicines, setMedicines] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const userId = user?.uid || 'demo';
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
-    if (!user) {
-      // Demo mode: static data
-      setMedicines([
-        { id: '1', name: 'Metformin', dosage: '500mg', category: 'Chronic', frequency: 'daily', times: ['08:00', '20:00'], pillCount: 28 },
-        { id: '2', name: 'Aspirin', dosage: '75mg', category: 'Chronic', frequency: 'daily', times: ['09:00'], pillCount: 60 },
-        { id: '3', name: 'Vitamin D3', dosage: '1000 IU', category: 'Vitamin', frequency: 'daily', times: ['08:00'], pillCount: 45 },
-      ]);
+    if (authLoading) return;
+
+    if (!user && isDemoMode()) {
+      setMedicines(getDemoMedicines());
       setLoading(false);
       return;
     }
+
+    if (!user) {
+      setMedicines([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     const unsub = subscribeMedicines(user.uid, (meds) => {
       setMedicines(meds);
       setLoading(false);
     });
     return () => unsub();
-  }, [user]);
+  }, [user, authLoading]);
 
   const filtered = medicines.filter((m) =>
     m.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleDose = async (medId, timeSlot, status) => {
+    if (!user && isDemoMode()) {
+      setMedicines((current) => {
+        const next = current.map((medicine) => {
+          if (medicine.id !== medId || status !== 'taken' || typeof medicine.pillCount !== 'number') return medicine;
+          return { ...medicine, pillCount: Math.max(0, medicine.pillCount - 1) };
+        });
+        const updated = next.find((medicine) => medicine.id === medId);
+        if (updated) updateDemoMedicine(medId, updated);
+        return next;
+      });
+      return;
+    }
     if (!user) return;
     await logDose(user.uid, { medicineId: medId, date: today, timeSlot, status });
   };

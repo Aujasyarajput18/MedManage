@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { subscribeMedicines } from '@/lib/firestore';
 import { checkDrugInteractions } from '@/lib/ai';
+import { getDemoMedicines, isDemoMode } from '@/lib/demo';
 
 const SEVERITY_CONFIG = {
   safe:    { color: 'var(--success)', bg: 'rgba(67,217,162,0.1)', border: 'rgba(67,217,162,0.3)', icon: '🟢', label: 'Safe' },
@@ -10,55 +11,40 @@ const SEVERITY_CONFIG = {
   danger:  { color: 'var(--danger)',  bg: 'rgba(255,71,87,0.1)',  border: 'rgba(255,71,87,0.3)',  icon: '🔴', label: 'Danger' },
 };
 
-const DEMO_RESULT = {
-  overall: 'caution',
-  summary: 'One interaction found. Review details below.',
-  interactions: [
-    {
-      medicines: ['Aspirin', 'Metformin'],
-      severity: 'caution',
-      title: 'Minor blood sugar interaction',
-      explanation: 'Aspirin can occasionally affect blood sugar levels, which may slightly change how Metformin works in your body. This is not dangerous at normal doses.',
-      action: 'Monitor your blood sugar more closely if you take both. Inform your doctor at your next visit.',
-    },
-  ],
-};
-
 export default function InteractionsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [medicines, setMedicines] = useState([]);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
+
+    if (!user && isDemoMode()) {
+      setMedicines(getDemoMedicines());
+      return;
+    }
+
     if (!user) {
-      // Demo data
-      setMedicines([
-        { id: '1', name: 'Metformin' },
-        { id: '2', name: 'Aspirin' },
-        { id: '3', name: 'Vitamin D3' },
-      ]);
+      setMedicines([]);
       return;
     }
     const unsub = subscribeMedicines(user.uid, setMedicines);
     return () => unsub();
-  }, [user]);
+  }, [user, authLoading]);
 
   const runCheck = async () => {
     setLoading(true);
     setChecked(true);
 
-    if (!user) {
-      // Use demo result for guest mode
-      await new Promise((r) => setTimeout(r, 1500));
-      setResult(DEMO_RESULT);
-      setLoading(false);
-      return;
-    }
-
     const data = await checkDrugInteractions(medicines);
-    setResult(data || DEMO_RESULT);
+    setResult(data || {
+      interactions: [],
+      overall: 'caution',
+      summary: 'Interaction check is unavailable right now. Please ask a pharmacist before combining medicines.',
+      error: true,
+    });
     setLoading(false);
   };
 

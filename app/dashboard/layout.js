@@ -190,7 +190,9 @@ export default function DashboardLayout({ children }) {
       {/* Bottom Navigation */}
       <nav className={styles.bottomNav}>
         {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+        const isActive = item.href === '/dashboard'
+          ? pathname === '/dashboard'
+          : pathname === item.href || pathname.startsWith(item.href + '/');
           if (item.isPrimary) {
             return (
               <Link key={item.href} href={item.href} className={styles.navItemPrimary}>

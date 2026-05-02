@@ -7,7 +7,7 @@ import styles from './page.module.css';
 
 const USPS = [
   { icon: '🆘', title: 'SOS Emergency', desc: 'Hold 3 seconds → live GPS location sent to all contacts via SMS. Zero competitors have this.' },
-  { icon: '🤖', title: 'AI Drug Checker', desc: 'Plain-language drug interaction warnings the moment you add a medicine. No medical jargon.' },
+  { icon: '🤖', title: 'AI Drug Checker', desc: 'Plain-language interaction checks you can run from your medicine list. No medical jargon.' },
   { icon: '🔥', title: 'Gamified Streaks', desc: 'Points, badges, streak counters. The MangoHealth model — revived and better.' },
   { icon: '🆓', title: 'Free Forever', desc: 'Medisafe went paid in Jan 2026. We\'re the replacement. No paywalls. No ads. Ever.' },
   { icon: '🇮🇳', title: 'India-First', desc: 'Indian drug database, Fast2SMS, Hindi support, and pharmacy links built-in.' },

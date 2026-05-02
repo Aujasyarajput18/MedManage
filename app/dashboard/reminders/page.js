@@ -115,12 +115,10 @@ export default function RemindersPage() {
     if (due <= new Date()) { setFormError('Scheduled time must be in the future.'); return; }
 
     setCreating(true);
-    const r = createReminder({ userId, medicineName: form.medicineName, scheduledTime: form.scheduledTime });
+    createReminder({ userId, medicineName: form.medicineName, scheduledTime: form.scheduledTime });
     setReminders(getReminders(userId));
     setForm({ medicineName: '', scheduledTime: '' });
     setCreating(false);
-
-    console.log('[Reminders] Created:', r);
   }, [form, userId]);
 
   // ─────────────────────────────────────────────────────────────────────

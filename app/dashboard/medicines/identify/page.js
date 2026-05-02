@@ -93,7 +93,7 @@ export default function PillIdentifyPage() {
           <div className="animate-spin" style={{ fontSize: '1.5rem' }}>⚙️</div>
           <div>
             <div className="font-bold">Analysing with AI...</div>
-            <div className="text-sm text-muted">Claude Vision is identifying your medicine</div>
+            <div className="text-sm text-muted">AI is identifying your medicine</div>
           </div>
         </div>
       )}

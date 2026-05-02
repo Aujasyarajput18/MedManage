@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { isDemoMode } from '@/lib/demo';
 import styles from './appointments.module.css';
 
 const DEMO_APPOINTMENTS = [
@@ -12,26 +13,38 @@ const DEMO_APPOINTMENTS = [
 const EMPTY_FORM = { doctor: '', date: '', time: '', hospital: '', notes: '' };
 
 export default function AppointmentsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [appointments, setAppointments] = useState([]);
+  const [storageKey, setStorageKey] = useState(null);
   const [showForm, setShowForm]         = useState(false);
   const [form, setForm]                 = useState(EMPTY_FORM);
   const [filter, setFilter]             = useState('upcoming'); // 'upcoming' | 'done' | 'all'
 
   useEffect(() => {
-    // Use demo data always for now (Firestore integration can be added later)
-    const stored = localStorage.getItem('appointments');
+    if (authLoading) return;
+
+    const demo = isDemoMode();
+    const key = user ? `appointments_${user.uid}` : demo ? 'appointments_demo' : null;
+    setStorageKey(key);
+
+    if (!key) {
+      setAppointments([]);
+      return;
+    }
+
+    const stored = localStorage.getItem(key);
     if (stored) {
       setAppointments(JSON.parse(stored));
     } else {
-      setAppointments(DEMO_APPOINTMENTS);
-      localStorage.setItem('appointments', JSON.stringify(DEMO_APPOINTMENTS));
+      const initial = demo ? DEMO_APPOINTMENTS : [];
+      setAppointments(initial);
+      localStorage.setItem(key, JSON.stringify(initial));
     }
-  }, []);
+  }, [user, authLoading]);
 
   const save = (updated) => {
     setAppointments(updated);
-    localStorage.setItem('appointments', JSON.stringify(updated));
+    if (storageKey) localStorage.setItem(storageKey, JSON.stringify(updated));
   };
 
   const handleAdd = () => {

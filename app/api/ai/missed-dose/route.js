@@ -17,7 +17,7 @@ export async function POST(request) {
   // Static fallback when no API key
   if (!isGeminiConfigured()) {
     return NextResponse.json({
-      advice: `For ${medicineName}: Take it as soon as you remember. If your next dose is in less than 2 hours, skip the missed dose and continue your normal schedule. Never take a double dose to make up for a missed one. When in doubt, call your pharmacist.`,
+      advice: `For ${medicineName}: follow the instructions on your prescription label or patient leaflet for missed doses. Do not take a double dose unless your clinician specifically told you to. If you are unsure, or this medicine is for diabetes, blood pressure, heart rhythm, seizures, blood thinning, mental health, or pain control, call your pharmacist or doctor before taking action.`,
       demoMode: true,
     });
   }
@@ -33,7 +33,7 @@ Format as plain text — no markdown, no bullet points, no headings.`;
   } catch (err) {
     console.error('[AI/missed-dose] Gemini error:', err.message);
     return NextResponse.json({
-      advice: `If you missed a dose of ${medicineName}, take it as soon as you remember. If it's almost time for your next dose, skip the missed one. Never take a double dose. When in doubt, ask your pharmacist.`,
+      advice: `Missed-dose guidance for ${medicineName} is unavailable right now. Check the prescription label or ask your pharmacist before taking an extra dose. Do not double up unless a clinician specifically told you to.`,
     });
   }
 }

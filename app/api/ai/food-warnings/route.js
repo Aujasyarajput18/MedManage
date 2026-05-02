@@ -7,16 +7,6 @@
 import { NextResponse }                   from 'next/server';
 import { geminiText, isGeminiConfigured } from '@/lib/gemini';
 
-const DEMO_WARNINGS = {
-  warnings: [
-    { icon: '🍊', text: 'Avoid grapefruit — it can affect how your medicine is absorbed.' },
-    { icon: '☕', text: 'Limit caffeine — may increase side effects.' },
-    { icon: '🥛', text: 'Some medicines work better taken with food to reduce stomach upset.' },
-  ],
-  tip: 'Demo mode — add GEMINI_API_KEY for real food interaction data.',
-  demoMode: true,
-};
-
 export async function POST(request) {
   const { medicineName } = await request.json();
 
@@ -25,7 +15,11 @@ export async function POST(request) {
   }
 
   if (!isGeminiConfigured()) {
-    return NextResponse.json(DEMO_WARNINGS);
+    return NextResponse.json({
+      warnings: [],
+      tip: 'Food interaction checking is not configured yet. Check your medicine label or ask your pharmacist.',
+      unavailable: true,
+    });
   }
 
   const prompt = `What foods, drinks, or dietary items should a patient avoid or be careful about when taking "${medicineName}"?

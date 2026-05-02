@@ -2,35 +2,43 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { subscribeMedicines, subscribeJournalEntries, getUserProfile } from '@/lib/firestore';
+import { getDemoJournal, getDemoMedicines, getDemoProfile, isDemoMode } from '@/lib/demo';
 import styles from './export.module.css';
 
 export default function ExportPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [medicines, setMedicines] = useState([]);
   const [journal, setJournal]     = useState([]);
   const [profile, setProfile]     = useState(null);
 
-  const name  = profile?.name || user?.displayName || 'Raj Kumar';
+  const name  = profile?.name || user?.displayName || 'Patient';
   const today = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
 
   useEffect(() => {
+    if (authLoading) return;
+
+    if (!user && isDemoMode()) {
+      setMedicines(getDemoMedicines());
+      setJournal(getDemoJournal());
+      setProfile(getDemoProfile());
+      return;
+    }
+
     if (!user) {
-      // Demo data
-      setMedicines([
-        { id: '1', name: 'Metformin', dosage: '500mg', times: ['08:00', '20:00'], category: 'Chronic', notes: 'Take with meals' },
-        { id: '2', name: 'Aspirin', dosage: '75mg', times: ['09:00'], category: 'Chronic', notes: '' },
-      ]);
-      setJournal([
-        { id: '1', date: '2026-04-25', bp: '120/80', glucose: 98, weight: 72 },
-        { id: '2', date: '2026-04-20', bp: '118/76', glucose: 105, weight: 72.5 },
-      ]);
+      setMedicines([]);
+      setJournal([]);
+      setProfile(null);
       return;
     }
     const unsubMeds = subscribeMedicines(user.uid, setMedicines);
     const unsubJournal = subscribeJournalEntries(user.uid, setJournal);
     getUserProfile(user.uid).then(p => p && setProfile(p));
     return () => { unsubMeds(); unsubJournal(); };
-  }, [user]);
+  }, [user, authLoading]);
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   const handleWhatsApp = () => {
     const text = encodeURIComponent(

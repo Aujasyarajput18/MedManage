@@ -62,24 +62,18 @@ function WeekChart({ data }) {
   );
 }
 
-const DEMO_MEDICINES = [
-  { id: '1', name: 'Metformin',  dosage: '500mg', times: ['08:00', '20:00'], category: 'Chronic' },
-  { id: '2', name: 'Aspirin',    dosage: '75mg',  times: ['09:00'],          category: 'Chronic' },
-  { id: '3', name: 'Vitamin D3', dosage: '1000IU',times: ['08:00'],          category: 'Vitamin' },
-];
-
 const DEMO_LOGS = [
-  { medicineId: '1', timeSlot: '08:00', status: 'taken' },
-  { medicineId: '3', timeSlot: '08:00', status: 'taken' },
+  { medicineId: 'demo-1', timeSlot: '08:00', status: 'taken' },
+  { medicineId: 'demo-3', timeSlot: '10:00', status: 'taken' },
 ];
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { t } = useLanguage();
-  const [medicines, setMedicines]   = useState(DEMO_MEDICINES);
-  const [doseLogs,  setDoseLogs]    = useState(DEMO_LOGS);
+  const [medicines, setMedicines]   = useState([]);
+  const [doseLogs,  setDoseLogs]    = useState([]);
   const [profile,   setProfile]     = useState(null);
-  const [loading,   setLoading]     = useState(false);
+  const [loading,   setLoading]     = useState(true);
   const countRef                    = useRef(null);
 
   const today    = new Date().toISOString().split('T')[0];
@@ -92,30 +86,33 @@ export default function DashboardPage() {
     if (isDemoMode()) {
       const demoMeds = getDemoMedicines();
       const demoProf = getDemoProfile();
-      if (demoMeds.length) setMedicines(demoMeds);
+      setMedicines(demoMeds);
+      setDoseLogs(DEMO_LOGS);
       if (demoProf) setProfile(demoProf);
       setLoading(false);
       return;
     }
+    if (authLoading) return;
     if (!user) { setLoading(false); return; }
     setLoading(true);
     const unsubMeds = subscribeMedicines(user.uid, (meds) => {
-      setMedicines(meds.length ? meds : DEMO_MEDICINES);
+      setMedicines(meds);
       setLoading(false);
     });
     const unsubLogs = subscribeDoseLogs(user.uid, today, setDoseLogs);
     getUserProfile(user.uid).then(p => p && setProfile(p));
     return () => { unsubMeds(); unsubLogs(); };
-  }, [user, today]);
+  }, [user, authLoading, today]);
 
-  // Compute stats
   const allSlots = medicines.flatMap(m => (m.times || []).map(t => ({ medId: m.id, time: t })));
-  const takenCount  = doseLogs.filter(l => l.status === 'taken').length;
+  const takenCount   = doseLogs.filter(l => l.status === 'taken').length;
   const skippedCount = doseLogs.filter(l => l.status === 'skipped').length;
-  const pendingCount = allSlots.length - doseLogs.length;
-  const adherence   = allSlots.length > 0 ? Math.round((takenCount / allSlots.length) * 100) : 100;
-  const streak      = profile?.streak || (user ? 0 : 14);
-  const points      = profile?.points || (user ? 0 : 1250);
+  // pendingCount = slots that have NO log entry at all yet
+  const loggedSlotKeys = new Set(doseLogs.map(l => `${l.medicineId}_${l.timeSlot}`));
+  const pendingCount   = allSlots.filter(s => !loggedSlotKeys.has(`${s.medId}_${s.time}`)).length;
+  const adherence      = allSlots.length > 0 ? Math.round((takenCount / allSlots.length) * 100) : 100;
+  const streak         = profile?.streak || 0;
+  const points         = profile?.points || 0;
 
   // Next upcoming dose
   const now = new Date();
@@ -144,12 +141,18 @@ export default function DashboardPage() {
     return { ...s, med, log, isPast, status: log?.status || (isPast ? 'missed' : 'pending') };
   }).sort((a, b) => a.time.localeCompare(b.time));
 
-  // Demo week data
-  const weekData = [
-    { taken: 3, total: 3 }, { taken: 2, total: 3 }, { taken: 3, total: 3 },
-    { taken: 3, total: 3 }, { taken: 1, total: 3 }, { taken: 3, total: 3 },
-    { taken: takenCount, total: allSlots.length || 3 },
-  ];
+  // Week data — real zeros for real users (only today's actual count is known from live data)
+  const weekData = isDemoMode()
+    ? [
+        { taken: 3, total: 3 }, { taken: 2, total: 3 }, { taken: 3, total: 3 },
+        { taken: 3, total: 3 }, { taken: 1, total: 3 }, { taken: 3, total: 3 },
+        { taken: takenCount, total: allSlots.length || 3 },
+      ]
+    : [
+        { taken: 0, total: 1 }, { taken: 0, total: 1 }, { taken: 0, total: 1 },
+        { taken: 0, total: 1 }, { taken: 0, total: 1 }, { taken: 0, total: 1 },
+        { taken: takenCount, total: allSlots.length || 1 },
+      ];
 
   return (
     <div className="flex-col gap-6 animate-fade-in">
@@ -181,7 +184,7 @@ export default function DashboardPage() {
               <span className="text-xs text-muted">{t('dashboard', 'skipped')}</span>
             </div>
             <div className={styles.statItem}>
-              <span className="text-muted font-bold" style={{ fontSize: '1.3rem' }}>{pendingCount > 0 ? pendingCount : 0}</span>
+              <span className="text-muted font-bold" style={{ fontSize: '1.3rem' }}>{pendingCount}</span>
               <span className="text-xs text-muted">{t('dashboard', 'pending')}</span>
             </div>
           </div>

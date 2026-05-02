@@ -2,25 +2,11 @@
  * app/api/ai/interactions/route.js  [UPDATED — Gemini]
  *
  * Drug-drug interaction checker using Gemini 1.5 Flash (free tier).
- * Falls back to static demo data if API key is not configured.
+ * Returns an honest unavailable state if API is not configured.
  */
 
 import { NextResponse }                    from 'next/server';
 import { geminiText, isGeminiConfigured }  from '@/lib/gemini';
-
-// ── Demo fallback (shown when no API key is set) ─────────────────────────
-const DEMO_FALLBACK = {
-  interactions: [{
-    medicines:   ['Aspirin', 'Metformin'],
-    severity:    'caution',
-    title:       'Minor blood sugar interaction',
-    explanation: 'Aspirin can occasionally affect blood sugar levels, slightly changing how Metformin works. Not dangerous at normal doses.',
-    action:      'Monitor your blood sugar more closely. Inform your doctor at your next visit.',
-  }],
-  overall:  'caution',
-  summary:  'Demo mode: one potential interaction shown. Add GEMINI_API_KEY for real AI analysis.',
-  demoMode: true,
-};
 
 export async function POST(request) {
   const { medicines } = await request.json();
@@ -29,9 +15,13 @@ export async function POST(request) {
     return NextResponse.json({ interactions: [], overall: 'safe', summary: 'Add at least 2 medicines to check interactions.' });
   }
 
-  // Return demo if no key configured
   if (!isGeminiConfigured()) {
-    return NextResponse.json(DEMO_FALLBACK);
+    return NextResponse.json({
+      interactions: [],
+      overall: 'caution',
+      summary: 'Interaction checking is not configured yet. Ask a doctor or pharmacist before combining medicines.',
+      unavailable: true,
+    });
   }
 
   const prompt = `You are a friendly medical advisor helping patients understand their medications.
@@ -65,8 +55,8 @@ Be friendly, reassuring when safe, clear when caution needed. Never be alarmist.
     console.error('[AI/interactions] Gemini error:', err.message);
     return NextResponse.json({
       interactions: [],
-      overall:      'safe',
-      summary:      'Unable to check interactions right now. Please consult your pharmacist.',
+      overall:      'caution',
+      summary:      'Unable to check interactions right now. Please consult your pharmacist before combining medicines.',
       error:        true,
     });
   }

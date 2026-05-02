@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
+import { isDemoMode } from '@/lib/demo';
 import {
   collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp,
 } from 'firebase/firestore';
@@ -15,7 +16,7 @@ const RELATIONS = ['Father', 'Mother', 'Spouse', 'Child', 'Sibling', 'Grandparen
 const AVATARS   = ['👴', '👩', '👨', '👵', '🧒', '👦', '👧', '🧑', '👶'];
 
 export default function ProfilesPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -28,16 +29,26 @@ export default function ProfilesPage() {
 
   // ── Load profiles ──
   useEffect(() => {
-    if (!user) {
+    if (authLoading) return;
+
+    if (!user && isDemoMode()) {
       setProfiles(DEMO_PROFILES);
       setLoading(false);
       return;
     }
+
+    if (!user) {
+      setProfiles([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     getDocs(collection(db, 'users', user.uid, 'familyProfiles')).then((snap) => {
       setProfiles(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       setLoading(false);
     });
-  }, [user]);
+  }, [user, authLoading]);
 
   // ── Add profile ──
   const handleAdd = async (e) => {

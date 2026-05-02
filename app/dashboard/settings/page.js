@@ -16,12 +16,17 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState({ name: '', email: '' });
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
-  const [theme, setTheme]     = useState('dark');
+  const [theme, setTheme]           = useState('dark');
+  const [notifEnabled, setNotifEnabled] = useState(false);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(savedTheme);
     document.documentElement.setAttribute('data-theme', savedTheme);
+    // Check real notification permission
+    if ('Notification' in window) {
+      setNotifEnabled(Notification.permission === 'granted');
+    }
   }, []);
 
   const handleTheme = (t) => {
@@ -32,7 +37,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!user) {
-      setProfile({ name: 'Demo User', email: 'demo@medmanage.app' });
+      setProfile({ name: '', email: '' });
       return;
     }
     getUserProfile(user.uid).then(p => {
@@ -126,7 +131,23 @@ export default function SettingsPage() {
         </Row>
         <Row icon="🔔" label={t('settings', 'notifications')}>
           <label className={styles.toggle}>
-            <input type="checkbox" defaultChecked />
+            <input
+              type="checkbox"
+              checked={notifEnabled}
+              disabled={typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'denied'}
+              onChange={async (e) => {
+                if (e.target.checked) {
+                  if ('Notification' in window) {
+                    const perm = await Notification.requestPermission();
+                    setNotifEnabled(perm === 'granted');
+                  }
+                } else {
+                  setNotifEnabled(false);
+                  // Can't programmatically revoke — guide user
+                  alert('To disable notifications, go to your browser site settings and block notifications for this site.');
+                }
+              }}
+            />
             <span className={styles.toggleSlider} />
           </label>
         </Row>

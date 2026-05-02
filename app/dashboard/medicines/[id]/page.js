@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getMedicine, updateMedicine, deleteMedicine, logDose } from '@/lib/firestore';
+import { deleteDemoMedicine, getDemoMedicines, isDemoMode, updateDemoMedicine } from '@/lib/demo';
 import styles from '../medicines.module.css';
 
 const CATEGORIES = ['Chronic', 'Acute', 'Vitamin', 'Supplement', 'Ayurvedic'];
@@ -23,15 +24,8 @@ const CATEGORY_COLORS = {
   Ayurvedic:  { bg: 'rgba(100,200,100,0.15)',color: '#78d878' },
 };
 
-// Demo medicines data (used when not logged in)
-const DEMO_MEDICINES = {
-  '1': { id: '1', name: 'Metformin',  dosage: '500mg', category: 'Chronic',  frequency: 'daily', times: ['08:00', '20:00'], pillCount: 28, notes: 'Take with meals. Helps control blood sugar.' },
-  '2': { id: '2', name: 'Aspirin',    dosage: '75mg',  category: 'Chronic',  frequency: 'daily', times: ['09:00'],          pillCount: 60, notes: 'Blood thinner. Do not crush.' },
-  '3': { id: '3', name: 'Vitamin D3', dosage: '1000 IU', category: 'Vitamin', frequency: 'daily', times: ['08:00'],         pillCount: 45, notes: 'Take with a fatty meal for best absorption.' },
-};
-
 export default function MedicineDetailPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const medId = params?.id;
@@ -53,9 +47,10 @@ export default function MedicineDetailPage() {
   // ── Load medicine ──
   useEffect(() => {
     if (!medId) return;
-    if (!user) {
-      // Demo mode
-      const demo = DEMO_MEDICINES[medId];
+    if (authLoading) return;
+
+    if (!user && isDemoMode()) {
+      const demo = getDemoMedicines().find((medicine) => medicine.id === medId);
       if (demo) {
         setMed(demo);
         initForm(demo);
@@ -63,6 +58,12 @@ export default function MedicineDetailPage() {
       setLoading(false);
       return;
     }
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     getMedicine(user.uid, medId).then((data) => {
       if (data) {
         setMed(data);
@@ -70,7 +71,7 @@ export default function MedicineDetailPage() {
       }
       setLoading(false);
     });
-  }, [user, medId]);
+  }, [user, authLoading, medId]);
 
   function initForm(data) {
     // Parse dosage into number + unit
@@ -105,6 +106,22 @@ export default function MedicineDetailPage() {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) { setError('Medicine name is required'); return; }
+    if (form.endDate && form.startDate && form.endDate < form.startDate) {
+      setError('End date cannot be before the start date');
+      return;
+    }
+    if (form.frequency === 'interval' && (Number(form.intervalHours) < 1 || Number(form.intervalHours) > 24)) {
+      setError('Interval must be between 1 and 24 hours');
+      return;
+    }
+    if (form.frequency !== 'interval' && form.frequency !== 'asneeded' && form.times.some((time) => !time)) {
+      setError('Please fill every dose time or remove the empty slot');
+      return;
+    }
+    if (form.pillCount !== '' && Number(form.pillCount) < 0) {
+      setError('Pill count cannot be negative');
+      return;
+    }
     setSaving(true);
     setError('');
     try {
@@ -122,6 +139,8 @@ export default function MedicineDetailPage() {
       };
       if (user) {
         await updateMedicine(user.uid, medId, updated);
+      } else if (isDemoMode()) {
+        updateDemoMedicine(medId, updated);
       }
       setMed((m) => ({ ...m, ...updated }));
       setEditing(false);
@@ -136,7 +155,11 @@ export default function MedicineDetailPage() {
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      if (user) await deleteMedicine(user.uid, medId);
+      if (user) {
+        await deleteMedicine(user.uid, medId);
+      } else if (isDemoMode()) {
+        deleteDemoMedicine(medId);
+      }
       router.replace('/dashboard/medicines');
     } catch (err) {
       setError(err.message || 'Failed to delete');
@@ -146,9 +169,18 @@ export default function MedicineDetailPage() {
 
   // ── Log dose ──
   const handleDose = async (timeSlot, status) => {
+    if (!user && isDemoMode()) {
+      if (status === 'taken' && typeof med.pillCount === 'number') {
+        const next = { ...med, pillCount: Math.max(0, med.pillCount - 1) };
+        updateDemoMedicine(medId, next);
+        setMed(next);
+      }
+      showToast(status === 'taken' ? 'Marked as taken!' : 'Skipped');
+      return;
+    }
     if (!user) { showToast('Sign in to track doses'); return; }
     await logDose(user.uid, { medicineId: medId, date: today, timeSlot, status });
-    showToast(status === 'taken' ? '✅ Marked as taken!' : '⏭️ Skipped');
+    showToast(status === 'taken' ? 'Marked as taken!' : 'Skipped');
   };
 
   function showToast(msg) {

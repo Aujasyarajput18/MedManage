@@ -13,17 +13,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { subscribeSOSContacts, addSOSContact, deleteSOSContact, logSOS } from '@/lib/firestore';
+import { getDemoSOSContacts, isDemoMode, setDemoSOSContacts } from '@/lib/demo';
 import styles from './sos.module.css';
 
 const HOLD_DURATION = 3000; // 3 seconds
 const SMS_COST_PER_MSG = 5; // ₹5 per SMS via Fast2SMS
 
 export default function SOSPage() {
-  const { user } = useAuth();
-  const [contacts, setContacts] = useState([
-    { id: 'demo1', name: 'Mom', phone: '9876543210' },
-    { id: 'demo2', name: 'Dad', phone: '8765432109' },
-  ]);
+  const { user, loading } = useAuth();
+  const [contacts, setContacts] = useState([]);
+  const [isDemo,         setIsDemo]         = useState(false);
   const [holding,        setHolding]        = useState(false);
   const [progress,       setProgress]       = useState(0);
   const [triggered,      setTriggered]      = useState(false);
@@ -41,12 +40,25 @@ export default function SOSPage() {
 
   // ── Load real contacts from Firestore ──────────────────────────────────
   useEffect(() => {
-    if (!user) return;
-    const unsub = subscribeSOSContacts(user.uid, (c) => {
-      setContacts(c);
-    });
-    return () => unsub();
-  }, [user]);
+    if (loading) return;
+
+    const demo = isDemoMode();
+    setIsDemo(demo);
+
+    if (user) {
+      const unsub = subscribeSOSContacts(user.uid, (c) => {
+        setContacts(c);
+      });
+      return () => unsub();
+    }
+
+    if (demo) {
+      setContacts(getDemoSOSContacts());
+      return;
+    }
+
+    setContacts([]);
+  }, [user, loading]);
 
   // ── Get GPS location on mount ──────────────────────────────────────────
   useEffect(() => {
@@ -72,7 +84,10 @@ export default function SOSPage() {
 
   // ── Phone validation (Indian mobile: 10 digits, starts 6-9) ───────────
   function validatePhone(raw) {
-    const digits = String(raw).replace(/\D/g, '').replace(/^91/, '');
+    let digits = String(raw).replace(/\D/g, '');
+    if (digits.startsWith('91') && digits.length === 12) {
+      digits = digits.slice(2);
+    }
     if (/^[6-9]\d{9}$/.test(digits)) return digits;
     return null;
   }
@@ -163,6 +178,10 @@ export default function SOSPage() {
     try {
       if (user) {
         await addSOSContact(user.uid, contact);
+      } else if (isDemo) {
+        const nextContacts = [...contacts, { id: Date.now().toString(), ...contact }];
+        setDemoSOSContacts(nextContacts);
+        setContacts(nextContacts);
       } else {
         setContacts((prev) => [...prev, { id: Date.now().toString(), ...contact }]);
       }
@@ -177,6 +196,10 @@ export default function SOSPage() {
   const handleDeleteContact = async (id) => {
     if (user) {
       await deleteSOSContact(user.uid, id);
+    } else if (isDemo) {
+      const nextContacts = contacts.filter((c) => c.id !== id);
+      setDemoSOSContacts(nextContacts);
+      setContacts(nextContacts);
     } else {
       setContacts((prev) => prev.filter((c) => c.id !== id));
     }
@@ -218,6 +241,11 @@ export default function SOSPage() {
               {sosResult.error && !sosResult.devMode && (
                 <p className="text-sm" style={{ color: 'var(--danger)' }}>
                   Error: {sosResult.error}
+                </p>
+              )}
+              {sosResult.smsResults?.[0]?.requestId && (
+                <p className="text-xs text-muted">
+                  Fast2SMS request ID: {sosResult.smsResults[0].requestId}
                 </p>
               )}
             </div>
@@ -375,7 +403,7 @@ export default function SOSPage() {
             <div>
               <input
                 className="input"
-                placeholder="Mobile number (e.g. 9876543210)"
+                placeholder="Mobile number (10 digits)"
                 value={newContact.phone}
                 maxLength={13}
                 onChange={(e) => {
@@ -455,6 +483,12 @@ export default function SOSPage() {
               {sosResult.error && !sosResult.devMode && (
                 <p className="text-xs" style={{ color: 'var(--danger)' }}>Error: {sosResult.error}</p>
               )}
+              {sosResult.smsResults?.[0]?.message && (
+                <p className="text-xs text-muted">Provider: {sosResult.smsResults[0].message}</p>
+              )}
+              {sosResult.smsResults?.[0]?.requestId && (
+                <p className="text-xs text-muted">Request ID: {sosResult.smsResults[0].requestId}</p>
+              )}
             </div>
           )}
 
@@ -473,12 +507,17 @@ export default function SOSPage() {
         <p className="font-bold mb-2">📱 What happens when SOS triggers:</p>
         <ol style={{ paddingLeft: '1.2rem', lineHeight: 2 }}>
           <li>Your live GPS location is captured</li>
-          <li>SMS sent to all {contacts.length} emergency contact{contacts.length !== 1 ? 's' : ''} via Fast2SMS</li>
+          <li>SMS sent to {contacts.length > 0 ? `all ${contacts.length} emergency contact${contacts.length !== 1 ? 's' : ''}` : 'your emergency contacts'} via Fast2SMS</li>
           <li>SMS includes Google Maps link to your exact location</li>
           <li>Event is logged in your SOS history</li>
         </ol>
+        {contacts.length === 0 && (
+          <p className="text-xs mt-3" style={{ color: 'var(--warning)' }}>
+            ⚠️ Add at least one emergency contact above before using SOS.
+          </p>
+        )}
         <p className="text-xs mt-3" style={{ color: 'var(--text-muted)' }}>
-          Cost: ₹{SMS_COST_PER_MSG}/SMS via Fast2SMS · Requires FAST2SMS_API_KEY in .env.local
+          Cost: ₹{SMS_COST_PER_MSG}/SMS via Fast2SMS · Requires FAST2SMS_API_KEY configured
         </p>
       </div>
     </div>

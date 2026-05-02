@@ -26,7 +26,7 @@ This project uses several third-party APIs. **Never commit real credentials to g
 |---|---|---|
 | `NEXT_PUBLIC_FIREBASE_*` | Firebase | [Firebase Console](https://console.firebase.google.com) → Project Settings → Your Apps |
 | `NEXT_PUBLIC_FIREBASE_VAPID_KEY` | FCM Web Push | Firebase Console → Project Settings → Cloud Messaging |
-| `ANTHROPIC_API_KEY` | Claude AI | [console.anthropic.com](https://console.anthropic.com) |
+| `GEMINI_API_KEY` | Gemini AI | [Google AI Studio](https://aistudio.google.com/app/apikey) |
 | `FAST2SMS_API_KEY` | SOS SMS | [fast2sms.com](https://fast2sms.com) → Developer → API |
 
 ### Deploying to Vercel

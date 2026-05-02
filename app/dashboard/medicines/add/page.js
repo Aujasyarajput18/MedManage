@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { addMedicine } from '@/lib/firestore';
+import { addDemoMedicine, isDemoMode } from '@/lib/demo';
 
 // Popular Indian medicines autocomplete
 const INDIAN_MEDICINES = [
@@ -83,6 +84,22 @@ export default function AddMedicinePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) { setError('Medicine name is required'); return; }
+    if (form.endDate && form.startDate && form.endDate < form.startDate) {
+      setError('End date cannot be before the start date');
+      return;
+    }
+    if (form.frequency === 'interval' && (Number(form.intervalHours) < 1 || Number(form.intervalHours) > 24)) {
+      setError('Interval must be between 1 and 24 hours');
+      return;
+    }
+    if (form.frequency !== 'interval' && form.frequency !== 'asneeded' && form.times.some((time) => !time)) {
+      setError('Please fill every dose time or remove the empty slot');
+      return;
+    }
+    if (form.pillCount !== '' && Number(form.pillCount) < 0) {
+      setError('Pill count cannot be negative');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -101,6 +118,8 @@ export default function AddMedicinePage() {
 
       if (user) {
         await addMedicine(user.uid, medicineData);
+      } else if (isDemoMode()) {
+        addDemoMedicine(medicineData);
       }
       router.push('/dashboard/medicines');
     } catch (err) {
@@ -118,7 +137,7 @@ export default function AddMedicinePage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="page-title">Add Medicine</h1>
-            <p className="page-subtitle">AI checks interactions automatically</p>
+            <p className="page-subtitle">Save your medicine, then check interactions from the list</p>
           </div>
           <Link href="/dashboard/medicines/identify" className="btn btn-ghost btn-sm flex-col" style={{ gap: 2 }}>
             <span>📷</span>
@@ -318,7 +337,7 @@ export default function AddMedicinePage() {
         <div className="glass-card-primary flex items-center gap-3" style={{ padding: 'var(--space-3)' }}>
           <span>🤖</span>
           <p className="text-sm text-secondary">
-            After saving, AI will automatically check this medicine against your others for interactions.
+            After saving, you can run the interaction checker from the medicines page.
           </p>
         </div>
 
