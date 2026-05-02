@@ -1,13 +1,11 @@
 /**
- * app/api/sos/send/route.js  [UPDATED]
+ * app/api/sos/send/route.js
  *
  * Sends emergency SMS to contacts via Fast2SMS on SOS trigger.
  * Cost: ₹5/SMS on Fast2SMS Quick Transactional route.
  *
  * Env required:
  *   FAST2SMS_API_KEY  — from fast2sms.com → Developer → API
- *
- * Fast2SMS Docs: https://docs.fast2sms.com
  */
 
 import { NextResponse } from 'next/server';
@@ -21,7 +19,18 @@ function sanitizeIndianPhone(raw) {
   }
   // Must be 10 digits starting with 6-9
   if (/^[6-9]\d{9}$/.test(digits)) return digits;
-  return null; // invalid number
+  return null;
+}
+
+/** Safely parse JSON — returns null if response is HTML or malformed */
+async function safeJson(res) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error('[SOS] Fast2SMS returned non-JSON:', text.slice(0, 200));
+    return null;
+  }
 }
 
 export async function POST(request) {
@@ -29,7 +38,10 @@ export async function POST(request) {
     const { userName, contacts, location } = await request.json();
 
     if (!contacts || contacts.length === 0) {
-      return NextResponse.json({ success: false, error: 'No contacts provided' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: 'No emergency contacts provided. Add contacts first.' },
+        { status: 400 }
+      );
     }
 
     // Build Google Maps link
@@ -43,7 +55,7 @@ export async function POST(request) {
       : `URGENT: ${userName} needs emergency help! Please call immediately - Sent via MedManage SOS`;
 
     // Sanitize and validate all phone numbers
-    const validPhones = [];
+    const validPhones  = [];
     const invalidPhones = [];
 
     contacts.forEach((c) => {
@@ -57,31 +69,31 @@ export async function POST(request) {
 
     const results = {
       message,
-      total: contacts.length,
-      valid: validPhones.length,
-      invalid: invalidPhones,
+      total:      contacts.length,
+      valid:      validPhones.length,
+      invalid:    invalidPhones,
       smsResults: [],
-      apiKeyMissing: false,
     };
 
     const apiKey = process.env.FAST2SMS_API_KEY;
 
     // ── No API key: dev/demo mode ─────────────────────────────────────────
     if (!apiKey || apiKey === 'your_fast2sms_key_here') {
-      results.apiKeyMissing = true;
-      return NextResponse.json({ success: true, devMode: true, ...results });
+      console.log('[SOS Dev Mode] Would send SMS to:', validPhones, '\nMessage:', message);
+      return NextResponse.json({ success: true, devMode: true, smsSent: false, ...results });
     }
 
     if (validPhones.length === 0) {
       return NextResponse.json({
         success: false,
-        error: 'No valid Indian mobile numbers found',
+        smsSent: false,
+        error:   'None of the saved phone numbers are valid 10-digit Indian mobile numbers.',
         invalid: invalidPhones,
+        ...results,
       }, { status: 400 });
     }
 
     // ── Send via Fast2SMS Quick Transactional (route: 'q') ────────────────
-    // Cost: ₹5/SMS. Sends to all valid numbers in one API call.
     const payload = new URLSearchParams({
       route:    'q',
       message,
@@ -90,17 +102,39 @@ export async function POST(request) {
       numbers:  validPhones.join(','),
     });
 
-    const fast2smsRes = await fetch('https://www.fast2sms.com/dev/bulkV2', {
-      method: 'POST',
-      headers: {
-        authorization:  apiKey,
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Cache-Control': 'no-cache',
-      },
-      body: payload,
-    });
+    let fast2smsRes;
+    try {
+      fast2smsRes = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+        method:  'POST',
+        headers: {
+          authorization:  apiKey,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Cache-Control': 'no-cache',
+        },
+        body: payload,
+        // 10s timeout via AbortController
+        signal: AbortSignal.timeout(10000),
+      });
+    } catch (fetchErr) {
+      return NextResponse.json({
+        success: false,
+        smsSent: false,
+        error:   `Could not reach Fast2SMS: ${fetchErr.message}. Check internet connection.`,
+        ...results,
+      }, { status: 502 });
+    }
 
-    const fast2smsData = await fast2smsRes.json();
+    // Safely parse response — Fast2SMS occasionally returns HTML on errors
+    const fast2smsData = await safeJson(fast2smsRes);
+
+    if (!fast2smsData) {
+      return NextResponse.json({
+        success: false,
+        smsSent: false,
+        error:   `Fast2SMS returned an unexpected response (HTTP ${fast2smsRes.status}). Your API key may be invalid.`,
+        ...results,
+      }, { status: 502 });
+    }
 
     // Fast2SMS success: { return: true, request_id: '...', message: ['...'] }
     const smsSent = fast2smsData.return === true;
@@ -109,54 +143,58 @@ export async function POST(request) {
       provider:  'fast2sms',
       requestId: fast2smsData.request_id,
       sent:      smsSent,
-      message:   fast2smsData.message?.[0] || fast2smsData.message,
+      message:   Array.isArray(fast2smsData.message)
+        ? fast2smsData.message.join('; ')
+        : fast2smsData.message,
     });
 
-    const providerMessage = fast2smsData.message?.[0] || fast2smsData.message || 'Fast2SMS did not accept the message';
+    const providerError = Array.isArray(fast2smsData.message)
+      ? fast2smsData.message.join('; ')
+      : (fast2smsData.message || 'Fast2SMS rejected the request');
 
     return NextResponse.json({
-      success:  smsSent,
+      success: smsSent,
       smsSent,
-      error: smsSent ? null : providerMessage,
+      error:   smsSent ? null : providerError,
       ...results,
       fast2sms: fast2smsData,
     });
 
   } catch (err) {
-    console.error('[SOS] API error:', err.message);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    console.error('[SOS] Unhandled API error:', err.message);
+    return NextResponse.json(
+      { success: false, smsSent: false, error: `Server error: ${err.message}` },
+      { status: 500 }
+    );
   }
 }
 
 /**
- * GET /api/sos/send — test endpoint to verify API key & balance
+ * GET /api/sos/send — verify API key & check wallet balance
  */
 export async function GET() {
   const apiKey = process.env.FAST2SMS_API_KEY;
   if (!apiKey || apiKey === 'your_fast2sms_key_here') {
-    return NextResponse.json({ configured: false, message: 'FAST2SMS_API_KEY not set in .env.local' });
+    return NextResponse.json({ configured: false, message: 'FAST2SMS_API_KEY not set' });
   }
   try {
     const res  = await fetch('https://www.fast2sms.com/dev/wallet', {
-      method: 'POST',
-      headers: {
-        authorization: apiKey,
-        'Cache-Control': 'no-cache',
-      },
+      method:  'POST',
+      headers: { authorization: apiKey, 'Cache-Control': 'no-cache' },
+      signal:  AbortSignal.timeout(5000),
     });
-    const data = await res.json();
-    if (!res.ok || data.return === false) {
+    const data = await safeJson(res);
+    if (!data || data.return === false) {
       return NextResponse.json({
         configured: true,
-        error: data.message || 'Unable to verify Fast2SMS wallet balance',
-        fast2sms: data,
-      }, { status: res.ok ? 400 : res.status });
+        error: data?.message || 'Unable to verify Fast2SMS wallet balance',
+      }, { status: 400 });
     }
     return NextResponse.json({
       configured: true,
       balance:    Number(data.wallet),
       currency:   '₹',
-      message:    `Fast2SMS configured. Wallet balance: ₹${data.wallet}`,
+      message:    `Fast2SMS configured. Wallet: ₹${data.wallet}`,
     });
   } catch (err) {
     return NextResponse.json({ configured: true, error: err.message }, { status: 500 });

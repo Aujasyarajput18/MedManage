@@ -35,8 +35,9 @@ export default function SOSPage() {
   const [testSending,    setTestSending]    = useState(false);
   const [phoneError,     setPhoneError]     = useState('');
 
-  const intervalRef  = useRef(null);
-  const startTimeRef = useRef(null);
+  const intervalRef   = useRef(null);
+  const startTimeRef  = useRef(null);
+  const triggeredRef  = useRef(false); // ref so interval closure always sees latest value
 
   // ── Load real contacts from Firestore ──────────────────────────────────
   useEffect(() => {
@@ -94,10 +95,15 @@ export default function SOSPage() {
 
   // ── SOS hold logic ─────────────────────────────────────────────────────
   const startHold = () => {
-    if (triggered) return;
+    if (triggeredRef.current) return; // use ref — not stale closure
+    if (contacts.length === 0) {
+      alert('Add at least one emergency contact before using SOS.');
+      return;
+    }
     setHolding(true);
     startTimeRef.current = Date.now();
     intervalRef.current = setInterval(() => {
+      if (triggeredRef.current) { clearInterval(intervalRef.current); return; }
       const elapsed = Date.now() - startTimeRef.current;
       const prog = Math.min(100, (elapsed / HOLD_DURATION) * 100);
       setProgress(prog);
@@ -116,17 +122,19 @@ export default function SOSPage() {
 
   // ── Main SOS trigger ───────────────────────────────────────────────────
   const triggerSOS = async () => {
+    if (triggeredRef.current) return; // prevent double-fire
+    triggeredRef.current = true;
     setHolding(false);
     setTriggered(true);
     setSending(true);
     setSosResult(null);
 
-    // Log to Firestore
+    // Log to Firestore (non-blocking, errors swallowed)
     if (user && location) {
-      await logSOS(user.uid, location).catch(() => {});
+      logSOS(user.uid, location).catch(() => {});
     }
 
-    await sendSMSAlert({ userName: user?.displayName || 'MedManage User' });
+    await sendSMSAlert({ userName: user?.displayName || user?.email?.split('@')[0] || 'MedManage User' });
     setSending(false);
   };
 
@@ -279,7 +287,12 @@ export default function SOSPage() {
 
         <button
           className="btn btn-ghost w-full"
-          onClick={() => { setTriggered(false); setProgress(0); setSosResult(null); }}
+          onClick={() => {
+            triggeredRef.current = false;
+            setTriggered(false);
+            setProgress(0);
+            setSosResult(null);
+          }}
         >
           ← Back to SOS
         </button>
