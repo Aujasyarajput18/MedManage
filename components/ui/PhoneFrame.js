@@ -65,12 +65,12 @@ export default function PhoneFrame({ children }) {
         <p className="ps-label">MedManage · Mobile Preview</p>
       </div>
 
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         /* MOBILE */
         .pfm { display: block; width: 100%; min-height: 100vh; }
         .pfd { display: none; }
 
-        /* DESKTOP ≥ 900px */
+        /* DESKTOP 900px and up */
         @media (min-width: 900px) {
           .pfm { display: none; }
 
@@ -90,7 +90,7 @@ export default function PhoneFrame({ children }) {
             height: 844px;
             background: #FFFBF7;
             border-radius: 50px;
-            overflow: hidden;              /* <-- critical: clips ALL children */
+            overflow: hidden;
             position: relative;
             display: flex;
             flex-direction: column;
@@ -157,7 +157,7 @@ export default function PhoneFrame({ children }) {
             display: flex; align-items: center; gap: 5px;
           }
 
-          /* THE KEY FIX: viewport is position:relative, overflow:hidden, flex:1 */
+          /* Viewport is relative, clipped, and fills the phone shell. */
           .ps-viewport {
             flex: 1;
             position: relative;          /* establishes new containing block */
@@ -165,8 +165,7 @@ export default function PhoneFrame({ children }) {
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             scroll-behavior: smooth;
-            /* The dashboard layout uses position:sticky/fixed for header+bottom-nav
-               which would escape overflow:hidden. We use overflow:clip to hard-clip. */
+            /* Hard-clip sticky app chrome inside the phone shell. */
             overflow: clip;
             overflow-y: scroll;
           }
@@ -200,7 +199,7 @@ export default function PhoneFrame({ children }) {
             text-align: center;
           }
         }
-      `}</style>
+      ` }} />
     </>
   );
 }

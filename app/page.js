@@ -1,38 +1,205 @@
 'use client';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { seedDemoData } from '@/lib/demo';
 
-const FEATURES = [
-  { title: 'SOS Emergency', desc: 'Hold 3 seconds → live GPS sent to contacts via SMS instantly.', color: '#DC2626', icon: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-  )},
-  { title: 'AI Drug Checker', desc: 'Plain-language interaction warnings. No medical jargon.', color: '#8B5CF6', icon: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
-  )},
-  { title: 'Smart Reminders', desc: 'Never miss a dose. Snooze, skip, or mark taken with one tap.', color: '#0D9488', icon: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-  )},
-  { title: 'Gamified Streaks', desc: 'Points, badges, 7-day streaks. Staying consistent is rewarding.', color: '#F59E0B', icon: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
-  )},
-  { title: 'Caregiver Access', desc: 'Add family members. Share medication data with caregivers.', color: '#FB923C', icon: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-  )},
-  { title: 'Free Forever', desc: 'Medisafe went paid. MedManage is — and always will be — free.', color: '#10B981', icon: (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-  )},
+const features = [
+  ['AI safety', 'Interactions, pill scan, food warnings, and missed-dose help.'],
+  ['Care team', 'Family profiles, SOS contacts, doctor exports, and adherence sharing.'],
+  ['Dose cockpit', 'Take, skip, refill, review, and plan from one premium phone screen.'],
+  ['Demo ready', 'A realistic no-login prototype seeded from the first click.'],
 ];
 
-const COMPARE = [
-  ['Always Free',        '✓', '✗ Paid 2026', '✓', '✗'],
-  ['SOS Emergency',     '✓', '✗',           '✗', '✗'],
-  ['AI Drug Check',     '✓', '✗',           '✗', 'Partial'],
-  ['India-First',       '✓', '✗',           '✗', '✗'],
-  ['Offline Mode',      '✓', '✗',           '✗', '✗'],
-  ['Gamification',      '✓', '✗',           '✗', '✗'],
-  ['Caregiver Alerts',  '✓ Instant', 'Delayed', '✗', '✗'],
+const workflow = [
+  ['Scan', 'Identify a pill or add a prescription.'],
+  ['Schedule', 'Dose times, inventory, and notes.'],
+  ['Act', 'Take, skip, SOS, or export.'],
+  ['Review', 'Streaks, symptoms, refills, and risk.'],
 ];
+
+const mark = (color = '#fff') => ({
+  width: 34,
+  height: 34,
+  borderRadius: '50%',
+  border: `4px dashed ${color}`,
+  boxShadow: `inset 0 0 0 8px transparent`,
+  flex: '0 0 auto',
+});
+
+function Bottle({ color, name, dark = false }) {
+  return (
+    <div style={{
+      position: 'absolute',
+      left: '50%',
+      top: 188,
+      width: 146,
+      height: 250,
+      transform: 'translateX(-50%)',
+      borderRadius: '22px 22px 34px 34px',
+      background: `linear-gradient(180deg, ${color} 0 62%, rgba(67,24,9,.66) 62% 100%)`,
+      boxShadow: '0 28px 42px rgba(0,0,0,.28)',
+      overflow: 'visible',
+      zIndex: 2,
+    }}>
+      <div style={{
+        position: 'absolute',
+        top: -48,
+        left: -9,
+        width: 164,
+        height: 52,
+        borderRadius: '5px 5px 10px 10px',
+        background: 'linear-gradient(90deg,#f5f2ea,#fff,#ebe8df)',
+        boxShadow: '0 16px 22px rgba(0,0,0,.2)',
+      }} />
+      <div style={{
+        height: '62%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 5,
+        color: dark ? '#111' : '#fff',
+        textAlign: 'center',
+        padding: '0 12px',
+      }}>
+        <span style={mark(dark ? '#111' : '#fff')} />
+        <strong style={{ fontSize: 22, lineHeight: 1, fontWeight: 950 }}>{name}</strong>
+        <small style={{ fontSize: 10, fontWeight: 900, opacity: .78 }}>by MedManage</small>
+      </div>
+      <div style={{
+        position: 'absolute',
+        left: 12,
+        right: 12,
+        bottom: 14,
+        height: 74,
+        display: 'flex',
+        alignItems: 'flex-end',
+        gap: 8,
+        overflow: 'hidden',
+      }}>
+        {[0, 1, 2].map((i) => (
+          <span key={i} style={{
+            width: 42,
+            height: 68,
+            borderRadius: 999,
+            background: 'linear-gradient(145deg,rgba(255,231,110,.98),rgba(184,67,14,.88))',
+            boxShadow: 'inset 0 12px 20px rgba(255,255,255,.34)',
+            transform: `rotate(${[-22, 18, -8][i]}deg) translateY(${[0, 14, 5][i]}px)`,
+          }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProductCard({ tone }) {
+  const sleep = tone === 'sleep';
+  const bg = sleep
+    ? 'linear-gradient(160deg,#a90936 0%,#de2359 58%,#9f1838 100%)'
+    : 'linear-gradient(160deg,#ffb90d 0%,#ffd51d 56%,#e3a512 100%)';
+  const dark = !sleep;
+  const text = dark ? '#111' : '#fff';
+
+  return (
+    <article style={{
+      position: 'relative',
+      width: 'min(360px, 88vw)',
+      minHeight: 600,
+      borderRadius: 48,
+      padding: '26px 28px 24px',
+      background: bg,
+      color: text,
+      boxShadow: '0 42px 90px rgba(34,75,91,.28)',
+      overflow: 'hidden',
+      transform: sleep ? 'rotate(-3deg)' : 'rotate(2deg)',
+      flex: '0 0 auto',
+    }}>
+      <div style={{
+        position: 'absolute',
+        inset: '92px 28px 190px',
+        opacity: .12,
+        background: `radial-gradient(ellipse at 50% 40%, ${text} 0 25%, transparent 26%),
+          radial-gradient(ellipse at 25% 70%, ${text} 0 15%, transparent 16%),
+          radial-gradient(ellipse at 78% 70%, ${text} 0 16%, transparent 17%)`,
+      }} />
+      <div style={{ position: 'relative', zIndex: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button type="button" aria-label="Previous medicine" style={{
+          width: 46,
+          height: 46,
+          borderRadius: '50%',
+          border: 0,
+          background: dark ? '#fff' : 'rgba(0,0,0,.18)',
+          color: dark ? '#111' : '#fff',
+          fontSize: 28,
+          lineHeight: 1,
+          cursor: 'pointer',
+        }}>‹</button>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 30, fontWeight: 950 }}>
+          <span style={mark(text)} /> MedManage
+        </span>
+      </div>
+      <div style={{ position: 'relative', zIndex: 3, display: 'flex', gap: 30, marginTop: 38, fontSize: 17, fontWeight: 950 }}>
+        <span style={{ opacity: sleep ? .48 : 1 }}>Relax</span>
+        <span style={{ opacity: sleep ? 1 : .45 }}>Sleep</span>
+      </div>
+      <Bottle color={sleep ? '#bf1746' : '#f8bf16'} name={sleep ? 'Night Guard' : 'Daily Care'} dark={dark} />
+      <div style={{ position: 'absolute', zIndex: 4, top: 158, right: 28, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {['30', sleep ? '60' : '14', sleep ? '90' : '20'].map((dose, i) => (
+          <span key={dose} style={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            display: 'grid',
+            placeItems: 'center',
+            background: i === 0 ? '#111' : 'rgba(17,17,17,.22)',
+            color: i === 0 ? '#fff' : (dark ? 'rgba(17,17,17,.5)' : 'rgba(255,255,255,.55)'),
+            fontSize: 19,
+            fontWeight: 950,
+          }}>{dose}</span>
+        ))}
+      </div>
+      <div style={{
+        position: 'absolute',
+        zIndex: 5,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        minHeight: 235,
+        padding: '34px 28px 28px',
+        borderRadius: '42px 42px 0 0',
+        background: '#fff',
+        color: '#111',
+      }}>
+        <h2 style={{ margin: 0, fontSize: 38, lineHeight: .98, fontWeight: 950 }}>
+          {sleep ? 'Night Guard 30' : 'Daily Care'}
+        </h2>
+        <p style={{ margin: '16px 0 20px', color: '#777', fontSize: 16, fontWeight: 900 }}>
+          {sleep ? 'Dissolvable reminder plan' : '250 mg · refill in 12 days'}
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+          <strong style={{ fontSize: 34, lineHeight: 1 }}>{sleep ? '98%' : '12'}</strong>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 20, fontWeight: 950 }}>
+            <b style={{ width: 38, height: 38, borderRadius: '50%', display: 'grid', placeItems: 'center', background: '#111', color: '#ffd21f' }}>-</b>
+            {sleep ? '1' : '2'}
+            <b style={{ width: 38, height: 38, borderRadius: '50%', display: 'grid', placeItems: 'center', background: '#111', color: '#ffd21f' }}>+</b>
+          </span>
+        </div>
+        <button type="button" style={{
+          width: '100%',
+          minHeight: 54,
+          border: 0,
+          borderRadius: 999,
+          background: '#ffd21f',
+          color: '#111',
+          fontSize: 16,
+          fontWeight: 950,
+          cursor: 'pointer',
+        }}>{sleep ? 'Open care plan' : 'Buy time back'}</button>
+      </div>
+    </article>
+  );
+}
 
 export default function LandingPage() {
   const router = useRouter();
@@ -42,220 +209,194 @@ export default function LandingPage() {
   };
 
   return (
-    <div style={{ fontFamily: "'Nunito', sans-serif", background: '#FFFBF7', color: '#1C1917', minHeight: '100vh' }}>
-
-      {/* ── NAV ── */}
+    <main style={{
+      minHeight: '100vh',
+      overflow: 'hidden',
+      background: 'linear-gradient(118deg,rgba(255,255,255,.36) 1px,transparent 1px) 0 0/180px 180px,#b8dbea',
+      color: '#0b1117',
+      fontFamily: 'Nunito, Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
+    }}>
       <nav style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(255,251,247,0.95)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid #E7E5E4',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 clamp(20px, 5vw, 80px)',
-        height: 64,
+        width: 'min(1180px, calc(100% - 32px))',
+        margin: '0 auto',
+        padding: '22px 0',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 34, height: 34, background: '#0D9488', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7z"/></svg>
-          </div>
-          <span style={{ fontWeight: 900, fontSize: '1.15rem', color: '#1C1917' }}>MedManage</span>
-        </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <Link href="/auth/login" style={{ padding: '8px 18px', borderRadius: 10, color: '#57534E', fontWeight: 700, textDecoration: 'none', fontSize: '0.9rem', border: '1.5px solid #E7E5E4' }}>Sign In</Link>
-          <Link href="/auth/signup" style={{ padding: '8px 20px', borderRadius: 10, background: '#0D9488', color: 'white', fontWeight: 700, textDecoration: 'none', fontSize: '0.9rem', boxShadow: '0 4px 16px rgba(13,148,136,0.3)' }}>Get Started Free</Link>
+        <Link href="/" aria-label="MedManage home" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          color: '#071018',
+          textDecoration: 'none',
+          fontSize: 'clamp(1.35rem, 2vw, 1.8rem)',
+          fontWeight: 950,
+        }}>
+          <span style={mark('#fff')} /> MedManage
+        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <Link href="/auth/login" aria-label="Sign in" style={{
+            width: 50,
+            height: 50,
+            borderRadius: '50%',
+            display: 'grid',
+            placeItems: 'center',
+            background: 'rgba(255,255,255,.9)',
+            boxShadow: '0 14px 28px rgba(25,57,71,.16)',
+            color: '#111',
+            textDecoration: 'none',
+            fontSize: 24,
+            fontWeight: 900,
+          }}>⌾</Link>
+          <button type="button" onClick={handleDemo} aria-label="Try demo" style={{
+            width: 50,
+            height: 50,
+            borderRadius: '50%',
+            border: 0,
+            position: 'relative',
+            background: 'rgba(255,255,255,.9)',
+            boxShadow: '0 14px 28px rgba(25,57,71,.16)',
+            color: '#111',
+            cursor: 'pointer',
+            fontSize: 24,
+          }}>⌑<span style={{
+            position: 'absolute',
+            top: -2,
+            right: -2,
+            minWidth: 19,
+            height: 19,
+            borderRadius: '50%',
+            display: 'grid',
+            placeItems: 'center',
+            background: '#111',
+            color: '#fff',
+            fontSize: 11,
+            fontWeight: 950,
+          }}>3</span></button>
         </div>
       </nav>
 
-      {/* ── HERO ── */}
       <section style={{
-        background: 'linear-gradient(160deg, #0D9488 0%, #0A7A70 55%, #064E3B 100%)',
-        padding: 'clamp(60px, 8vw, 120px) clamp(20px, 5vw, 80px)',
-        textAlign: 'center',
-        position: 'relative',
-        overflow: 'hidden',
+        width: 'min(1180px, calc(100% - 32px))',
+        margin: '0 auto',
+        padding: 'clamp(28px,5vw,70px) 0 70px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'clamp(28px,5vw,70px)',
+        flexWrap: 'wrap',
       }}>
-        {/* Subtle pattern */}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(circle at 20% 80%, rgba(255,255,255,0.06) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.06) 0%, transparent 50%)' }} />
-
-        <div style={{ position: 'relative', maxWidth: 760, margin: '0 auto' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(251,146,60,0.2)', border: '1px solid rgba(251,146,60,0.4)', borderRadius: 9999, padding: '6px 16px', marginBottom: 24 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#FB923C', display: 'inline-block', animation: 'pulse 1.5s ease-in-out infinite' }} />
-            <span style={{ color: '#FB923C', fontWeight: 700, fontSize: '0.85rem' }}>Medisafe went paid · We're the free replacement</span>
-          </div>
-
-          <h1 style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 'clamp(2.2rem, 5vw, 3.6rem)', color: 'white', lineHeight: 1.15, margin: '0 0 20px' }}>
-            The Free, AI-Powered<br />
-            <span style={{ color: '#6EE7B7' }}>Medication App for India.</span>
-          </h1>
-
-          <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 'clamp(1rem, 2vw, 1.2rem)', maxWidth: 560, margin: '0 auto 36px', lineHeight: 1.65 }}>
-            Drug interaction warnings. Emergency SOS. Gamified streaks. Caregiver alerts. No paywalls. No ads. Always free.
+        <div style={{ flex: '1 1 390px', maxWidth: 535 }}>
+          <p style={{ margin: '0 0 18px', color: 'rgba(11,17,23,.7)', fontSize: 14, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '.08em' }}>
+            Free medication care prototype
           </p>
-
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 24 }}>
-            <Link href="/auth/signup" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'white', color: '#0D9488', fontWeight: 800, fontSize: '1rem', padding: '14px 28px', borderRadius: 12, textDecoration: 'none', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', transition: 'transform 0.2s' }}>
-              Get Started Free →
-            </Link>
-            <button onClick={handleDemo} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.15)', color: 'white', fontWeight: 700, fontSize: '1rem', padding: '14px 28px', borderRadius: 12, border: '1.5px solid rgba(255,255,255,0.3)', cursor: 'pointer', backdropFilter: 'blur(8px)' }}>
-              Try Demo (no login)
-            </button>
+          <h1 style={{
+            margin: 0,
+            color: '#fff',
+            fontSize: 'clamp(2.5rem, 12vw, 6.2rem)',
+            lineHeight: .98,
+            fontWeight: 950,
+            textShadow: '0 20px 48px rgba(36,85,103,.22)',
+            letterSpacing: 0,
+          }}>
+            Medication management that feels calm, premium, and ready to demo.
+          </h1>
+          <p style={{ maxWidth: 488, margin: '24px 0 0', color: 'rgba(11,17,23,.76)', fontSize: 17, lineHeight: 1.7, fontWeight: 800 }}>
+            MedManage brings reminders, refills, AI safety checks, caregiver updates, SOS,
+            journals, and doctor reports into one polished phone-first experience.
+          </p>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 30 }}>
+            <button type="button" onClick={handleDemo} style={{
+              minHeight: 56,
+              border: 0,
+              borderRadius: 999,
+              padding: '0 30px',
+              background: '#111',
+              color: '#fff',
+              fontSize: 16,
+              fontWeight: 950,
+              cursor: 'pointer',
+              boxShadow: '0 18px 34px rgba(17,17,17,.2)',
+            }}>Try interactive demo</button>
+            <Link href="/auth/signup" style={{
+              minHeight: 56,
+              borderRadius: 999,
+              padding: '0 30px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(255,255,255,.55)',
+              border: '1px solid rgba(255,255,255,.7)',
+              color: '#111',
+              textDecoration: 'none',
+              fontSize: 16,
+              fontWeight: 950,
+            }}>Create account</Link>
           </div>
+        </div>
 
-          <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
-            {['No credit card', 'Free forever', 'Works on any phone', 'Installs as an app'].map(t => (
-              <span key={t} style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
-                <span style={{ color: '#6EE7B7', fontWeight: 900 }}>✓</span> {t}
-              </span>
-            ))}
-          </div>
+        <div style={{
+          flex: '1 1 560px',
+          minHeight: 650,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 0,
+          flexWrap: 'wrap',
+        }} aria-label="MedManage product preview">
+          <div style={{ marginRight: -40, marginTop: 40 }}><ProductCard tone="sleep" /></div>
+          <div style={{ marginLeft: -10 }}><ProductCard tone="relax" /></div>
         </div>
       </section>
 
-      {/* ── PHONE PREVIEW STRIP ── */}
-      <section style={{ background: '#F5F5F0', padding: 'clamp(40px, 5vw, 80px) clamp(20px, 5vw, 80px)', textAlign: 'center' }}>
-        <p style={{ color: '#57534E', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Looks great on any device</p>
-        <h2 style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', color: '#1C1917', marginBottom: 48 }}>
-          Designed for phones first. Works everywhere.
+      <section style={{
+        width: 'min(920px, calc(100% - 32px))',
+        margin: '0 auto 34px',
+        padding: 'clamp(42px,6vw,76px) clamp(24px,5vw,64px)',
+        borderRadius: 44,
+        background: 'rgba(72,132,166,.66)',
+        color: '#fff',
+        textAlign: 'center',
+        boxShadow: '0 32px 80px rgba(34,75,91,.22)',
+      }}>
+        <p style={{ margin: '0 0 16px', color: 'rgba(255,255,255,.72)', fontWeight: 950 }}>Prototype-ready surface</p>
+        <h2 style={{ maxWidth: 680, margin: '0 auto', color: '#fff', fontSize: 'clamp(2.5rem,6vw,5rem)', lineHeight: .98, fontWeight: 950 }}>
+          Powerful care tools, presented like a real product.
         </h2>
-
-        {/* Mini phone mockups */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap' }}>
-          {[
-            { label: 'Dashboard', bg: '#0D9488', content: [
-              { h: 60, color: '#0D9488', text: 'Today\'s Medicines' },
-              { h: 40, color: '#FFF', text: 'Metformin 500mg · 8 AM' },
-              { h: 40, color: '#FFF', text: 'Amlodipine 5mg · 8 PM' },
-            ]},
-            { label: 'SOS Alert', bg: '#DC2626', content: [
-              { h: 80, color: '#DC2626', text: '🆘 Emergency SOS' },
-              { h: 40, color: '#FFF', text: 'Hold 3 seconds' },
-            ]},
-            { label: 'Reminders', bg: '#8B5CF6', content: [
-              { h: 50, color: '#8B5CF6', text: 'Reminders' },
-              { h: 40, color: '#FFF', text: 'Metformin · 8:00 AM' },
-              { h: 40, color: '#FFF', text: 'Vitamin D · 12:00 PM' },
-            ]},
-          ].map((screen) => (
-            <div key={screen.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 140, height: 280, background: 'white', borderRadius: 28, overflow: 'hidden', boxShadow: '0 0 0 6px #1C1917, 0 20px 40px rgba(0,0,0,0.3)', position: 'relative' }}>
-                {/* Notch */}
-                <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 60, height: 16, background: '#1C1917', borderRadius: '0 0 12px 12px', zIndex: 2 }} />
-                <div style={{ background: screen.bg, padding: '22px 12px 10px', textAlign: 'center' }}>
-                  <p style={{ color: 'white', fontWeight: 800, fontSize: '0.7rem', margin: 0 }}>{screen.content[0].text}</p>
-                </div>
-                <div style={{ padding: '10px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {screen.content.slice(1).map((c, i) => (
-                    <div key={i} style={{ background: '#F5F5F0', borderRadius: 8, padding: '8px 10px', border: '1px solid #E7E5E4' }}>
-                      <p style={{ fontSize: '0.6rem', fontWeight: 700, color: '#1C1917', margin: 0 }}>{c.text}</p>
-                    </div>
-                  ))}
-                </div>
-                {/* Home bar */}
-                <div style={{ position: 'absolute', bottom: 6, left: '50%', transform: 'translateX(-50%)', width: 50, height: 4, background: '#1C1917', borderRadius: 2, opacity: 0.2 }} />
-              </div>
-              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#57534E' }}>{screen.label}</span>
+        <div style={{ marginTop: 42, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 12, textAlign: 'left' }}>
+          {workflow.map(([title, body]) => (
+            <div key={title} style={{ padding: 18, borderRadius: 24, background: 'rgba(255,255,255,.14)', border: '1px solid rgba(255,255,255,.16)' }}>
+              <strong style={{ color: '#fff', fontWeight: 950 }}>{title}</strong>
+              <p style={{ margin: '8px 0 0', color: 'rgba(255,255,255,.75)', fontSize: 14, lineHeight: 1.55, fontWeight: 750 }}>{body}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── FEATURES GRID ── */}
-      <section style={{ padding: 'clamp(60px, 6vw, 100px) clamp(20px, 5vw, 80px)' }}>
-        <div style={{ textAlign: 'center', marginBottom: 56 }}>
-          <p style={{ color: '#0D9488', fontWeight: 700, fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Everything you need</p>
-          <h2 style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 'clamp(1.5rem, 3vw, 2.4rem)', color: '#1C1917' }}>
-            Everything your medication app<br /><span style={{ color: '#0D9488' }}>should have had.</span>
-          </h2>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, maxWidth: 1100, margin: '0 auto' }}>
-          {FEATURES.map(f => (
-            <div key={f.title} style={{ background: 'white', border: '1px solid #E7E5E4', borderRadius: 16, padding: 28, boxShadow: '0 2px 8px rgba(28,25,23,0.06)', transition: 'transform 0.2s, box-shadow 0.2s' }}>
-              <div style={{ width: 52, height: 52, borderRadius: 14, background: `${f.color}12`, border: `1.5px solid ${f.color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: f.color, marginBottom: 16 }}>
-                {f.icon}
-              </div>
-              <h3 style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 800, fontSize: '1.05rem', color: '#1C1917', marginBottom: 8 }}>{f.title}</h3>
-              <p style={{ color: '#57534E', fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>{f.desc}</p>
-            </div>
-          ))}
-        </div>
+      <section style={{
+        width: 'min(1180px, calc(100% - 32px))',
+        margin: '0 auto',
+        padding: '24px 0 72px',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))',
+        gap: 18,
+      }}>
+        {features.map(([title, body]) => (
+          <article key={title} style={{
+            minHeight: 232,
+            padding: 26,
+            borderRadius: 32,
+            background: 'rgba(255,255,255,.76)',
+            boxShadow: '0 22px 46px rgba(34,75,91,.14)',
+            border: '1px solid rgba(255,255,255,.7)',
+          }}>
+            <span style={{ display: 'inline-flex', minHeight: 38, alignItems: 'center', padding: '0 14px', borderRadius: 999, background: '#111', color: '#fff', fontSize: 13, fontWeight: 950 }}>
+              {title}
+            </span>
+            <p style={{ margin: '58px 0 0', color: 'rgba(11,17,23,.68)', fontSize: 16, lineHeight: 1.62, fontWeight: 800 }}>{body}</p>
+          </article>
+        ))}
       </section>
-
-      {/* ── COMPARISON TABLE ── */}
-      <section style={{ background: '#F5F5F0', padding: 'clamp(60px, 6vw, 100px) clamp(20px, 5vw, 80px)' }}>
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <h2 style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', color: '#1C1917' }}>How we compare</h2>
-          <p style={{ color: '#57534E', marginTop: 8 }}>vs. Medisafe, MyTherapy, EveryDose</p>
-        </div>
-
-        <div style={{ overflowX: 'auto', maxWidth: 860, margin: '0 auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', background: 'white', borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 24px rgba(28,25,23,0.08)' }}>
-            <thead>
-              <tr style={{ background: '#0D9488' }}>
-                {['Feature', 'MedManage', 'Medisafe', 'MyTherapy', 'EveryDose'].map((h, i) => (
-                  <th key={h} style={{ padding: '14px 16px', textAlign: i === 0 ? 'left' : 'center', color: 'white', fontFamily: 'Nunito,sans-serif', fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.02em', background: i === 1 ? '#0A7A70' : undefined }}>
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {COMPARE.map(([feat, ...vals], ri) => (
-                <tr key={feat} style={{ borderBottom: '1px solid #E7E5E4', background: ri % 2 === 0 ? 'white' : '#FAFAFA' }}>
-                  <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: '0.875rem', color: '#1C1917' }}>{feat}</td>
-                  {vals.map((v, vi) => (
-                    <td key={vi} style={{ padding: '12px 16px', textAlign: 'center', fontSize: '0.85rem', fontWeight: vi === 0 ? 700 : 500, color: v === '✓' || v === '✓ Instant' ? '#0D9488' : v === '✗' ? '#DC2626' : '#F59E0B', background: vi === 0 ? 'rgba(13,148,136,0.04)' : undefined }}>
-                      {v}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* ── CTA ── */}
-      <section style={{ background: 'linear-gradient(135deg, #0D9488, #064E3B)', padding: 'clamp(60px, 6vw, 100px) clamp(20px, 5vw, 80px)', textAlign: 'center' }}>
-        <h2 style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: 'clamp(1.8rem, 4vw, 3rem)', color: 'white', marginBottom: 12 }}>
-          Start for free.<br />Takes 30 seconds.
-        </h2>
-        <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: 36, fontSize: '1.05rem' }}>No credit card. No ads. No paywalls. Ever.</p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/auth/signup" style={{ display: 'inline-flex', alignItems: 'center', background: 'white', color: '#0D9488', fontWeight: 800, padding: '14px 32px', borderRadius: 12, textDecoration: 'none', fontSize: '1.05rem', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
-            Sign Up Free →
-          </Link>
-          <button onClick={handleDemo} style={{ display: 'inline-flex', alignItems: 'center', background: 'rgba(255,255,255,0.15)', color: 'white', fontWeight: 700, padding: '14px 32px', borderRadius: 12, border: '1.5px solid rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: '1rem' }}>
-            Try Demo First
-          </button>
-        </div>
-      </section>
-
-      {/* ── FOOTER ── */}
-      <footer style={{ background: '#1C1917', padding: '32px clamp(20px, 5vw, 80px)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 28, height: 28, background: '#0D9488', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7z"/></svg>
-          </div>
-          <span style={{ color: 'white', fontWeight: 800 }}>MedManage</span>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>© 2026</span>
-        </div>
-        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-          <Link href="/privacy" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none' }}>Privacy</Link>
-          <Link href="/terms" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none' }}>Terms</Link>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.8rem' }}>We never sell your health data. Ever.</span>
-        </div>
-      </footer>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(0.9); }
-        }
-        @media (min-width: 900px) {
-          body { background: #FFFBF7 !important; }
-        }
-      `}</style>
-    </div>
+    </main>
   );
 }
