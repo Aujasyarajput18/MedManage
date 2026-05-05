@@ -304,7 +304,7 @@ export default function SOSPage() {
   return (
     <div className="flex-col gap-6 animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">🆘 Emergency SOS</h1>
+        <h1 className="page-title">Emergency SOS</h1>
         <p className="page-subtitle">Hold the button for 3 seconds to send an alert</p>
       </div>
 

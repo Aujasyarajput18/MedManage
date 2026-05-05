@@ -62,32 +62,32 @@ export default function ExportPage() {
   return (
     <div className="flex-col gap-6 animate-fade-in">
       {/* Hide this header when printing */}
-      <div className="page-header no-print">
+      <div className="page-header no-print" style={{ marginBottom: 0 }}>
         <h1 className="page-title">📄 Doctor's Report</h1>
-        <p className="page-subtitle">Generate a PDF summary of your health data</p>
-        <div className="flex-col gap-3 mt-4">
-          <button onClick={handlePrint} className="btn btn-primary w-full">
-            🖨️ Save as PDF / Print
-          </button>
-          <button onClick={handleWhatsApp} className="btn w-full" style={{ background: '#25D366', color: '#fff' }}>
-            <span style={{ marginRight: 8 }}>💬</span>Share via WhatsApp
-          </button>
-          <button onClick={handleExportJSON} className="btn btn-ghost w-full">
-            📥 Download Raw Data (JSON)
-          </button>
-        </div>
+        <p className="page-subtitle">Export your full health summary as PDF</p>
+      </div>
+      <div className="no-print flex-col gap-3">
+        <button onClick={handlePrint} className="btn btn-primary w-full" style={{ minHeight: 52 }}>
+          🖨️ Save as PDF / Print
+        </button>
+        <button onClick={handleWhatsApp} className="btn w-full" style={{ background: '#25D366', color: '#fff', minHeight: 52, border: 'none' }}>
+          <span style={{ marginRight: 8 }}>💬</span>Share via WhatsApp
+        </button>
+        <button onClick={handleExportJSON} className="btn btn-ghost w-full">
+          📥 Download Raw Data (JSON)
+        </button>
       </div>
 
       {/* The Printable Report */}
       <div className={`${styles.reportContainer} print-only-bg`}>
         <div className={styles.reportHeader}>
           <div>
-            <h1 style={{ fontSize: '1.8rem', color: '#12122A', margin: 0 }}>Medication & Health Summary</h1>
-            <p style={{ color: '#4A4A6A', margin: 0 }}>Generated via MedManage App</p>
+            <h1 style={{ fontSize: '1.6rem', color: '#0D9488', margin: 0, fontFamily: 'Nunito,sans-serif', fontWeight: 900 }}>Medication & Health Summary</h1>
+            <p style={{ color: '#6B7280', margin: 0, fontSize: '0.9rem' }}>Generated via MedManage App</p>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <p style={{ fontWeight: 'bold', color: '#12122A', margin: 0 }}>{name}</p>
-            <p style={{ color: '#4A4A6A', fontSize: '0.9rem', margin: 0 }}>Date: {today}</p>
+            <p style={{ fontWeight: 'bold', color: '#1C1917', margin: 0 }}>{name}</p>
+            <p style={{ color: '#6B7280', fontSize: '0.9rem', margin: 0 }}>Date: {today}</p>
           </div>
         </div>
 

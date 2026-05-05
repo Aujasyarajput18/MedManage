@@ -4,193 +4,143 @@ import { useAuth } from '@/context/AuthContext';
 import { isDemoMode } from '@/lib/demo';
 import styles from './appointments.module.css';
 
-const DEMO_APPOINTMENTS = [
-  { id: 'a1', doctor: 'Dr. Sharma (Cardiologist)', date: '2026-05-03', time: '10:30', hospital: 'Apollo Hospital, Delhi', notes: 'Monthly BP review. Bring last 30-day log.', done: false },
-  { id: 'a2', doctor: 'Dr. Patel (Diabetologist)', date: '2026-05-15', time: '09:00', hospital: 'Fortis Hospital', notes: 'HbA1c test results follow-up.', done: false },
-  { id: 'a3', doctor: 'Dr. Mehta (General)', date: '2026-04-20', time: '11:00', hospital: 'City Clinic', notes: 'Routine check-up.', done: true },
+const DEMO_APPTS = [
+  { id: '1', doctor: 'Dr. Priya Kumar', specialty: 'Cardiologist', date: '2026-05-10', time: '10:30 AM', location: 'City Heart Clinic', notes: 'Annual heart checkup', status: 'upcoming', emoji: '❤️' },
+  { id: '2', doctor: 'Dr. Ramesh Iyer', specialty: 'Endocrinologist', date: '2026-05-18', time: '2:00 PM', location: 'Apollo Hospital', notes: 'Diabetes review, bring last 3 reports', status: 'upcoming', emoji: '🩺' },
+  { id: '3', doctor: 'Dr. Sunita Rao', specialty: 'General Physician', date: '2026-04-22', time: '11:00 AM', location: 'Family Clinic', notes: 'Routine checkup', status: 'past', emoji: '🏥' },
 ];
 
-const EMPTY_FORM = { doctor: '', date: '', time: '', hospital: '', notes: '' };
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function getDayOfMonth(dateStr) {
+  return new Date(dateStr).getDate();
+}
+
+function getMonthShort(dateStr) {
+  return new Date(dateStr).toLocaleDateString('en-IN', { month: 'short' }).toUpperCase();
+}
 
 export default function AppointmentsPage() {
-  const { user, loading: authLoading } = useAuth();
-  const [appointments, setAppointments] = useState([]);
-  const [storageKey, setStorageKey] = useState(null);
-  const [showForm, setShowForm]         = useState(false);
-  const [form, setForm]                 = useState(EMPTY_FORM);
-  const [filter, setFilter]             = useState('upcoming'); // 'upcoming' | 'done' | 'all'
+  const { user } = useAuth();
+  const [tab, setTab]           = useState('upcoming');
+  const [appointments, setAppts] = useState(DEMO_APPTS);
+  const [showForm, setShowForm]  = useState(false);
+  const [form, setForm]          = useState({ doctor: '', specialty: '', date: '', time: '', location: '', notes: '', emoji: '🩺' });
+  const [saving, setSaving]      = useState(false);
 
-  useEffect(() => {
-    if (authLoading) return;
+  const filtered = appointments.filter(a => a.status === tab);
 
-    const demo = isDemoMode();
-    const key = user ? `appointments_${user.uid}` : demo ? 'appointments_demo' : null;
-    setStorageKey(key);
-
-    if (!key) {
-      setAppointments([]);
-      return;
-    }
-
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      setAppointments(JSON.parse(stored));
-    } else {
-      const initial = demo ? DEMO_APPOINTMENTS : [];
-      setAppointments(initial);
-      localStorage.setItem(key, JSON.stringify(initial));
-    }
-  }, [user, authLoading]);
-
-  const save = (updated) => {
-    setAppointments(updated);
-    if (storageKey) localStorage.setItem(storageKey, JSON.stringify(updated));
-  };
-
-  const handleAdd = () => {
-    if (!form.doctor || !form.date) return;
-    const newAppt = { ...form, id: `a-${Date.now()}`, done: false };
-    save([newAppt, ...appointments]);
-    setForm(EMPTY_FORM);
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    const newAppt = { ...form, id: Date.now().toString(), status: 'upcoming' };
+    setAppts(prev => [newAppt, ...prev]);
+    setForm({ doctor: '', specialty: '', date: '', time: '', location: '', notes: '', emoji: '🩺' });
     setShowForm(false);
+    setSaving(false);
   };
 
-  const toggleDone = (id) => {
-    save(appointments.map(a => a.id === id ? { ...a, done: !a.done } : a));
-  };
-
-  const handleDelete = (id) => {
-    save(appointments.filter(a => a.id !== id));
-  };
-
-  const today = new Date().toISOString().split('T')[0];
-
-  const filtered = appointments.filter(a => {
-    if (filter === 'upcoming') return !a.done && a.date >= today;
-    if (filter === 'done')     return a.done;
-    return true;
-  }).sort((a, b) => a.date.localeCompare(b.date));
-
-  const upcomingCount = appointments.filter(a => !a.done && a.date >= today).length;
-
-  const daysUntil = (dateStr) => {
-    const diff = Math.ceil((new Date(dateStr) - new Date()) / 86400000);
-    if (diff === 0) return 'Today!';
-    if (diff === 1) return 'Tomorrow';
-    if (diff < 0)  return `${Math.abs(diff)}d ago`;
-    return `in ${diff} days`;
+  const deleteAppt = (id) => {
+    if (!confirm('Delete this appointment?')) return;
+    setAppts(prev => prev.filter(a => a.id !== id));
   };
 
   return (
-    <div className="flex-col gap-6 animate-fade-in">
-      <div className="page-header">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="page-title">🏥 Appointments</h1>
-            <p className="page-subtitle">{upcomingCount} upcoming</p>
-          </div>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowForm(v => !v)}>
-            {showForm ? '✕ Cancel' : '+ Add'}
-          </button>
-        </div>
+    <div className="flex-col gap-5 animate-fade-in">
+      <div className="page-header" style={{ marginBottom: 0 }}>
+        <h1 className="page-title">🩺 Appointments</h1>
+        <p className="page-subtitle">Manage your doctor visits</p>
       </div>
 
-      {/* Add form */}
-      {showForm && (
-        <div className="glass-card flex-col gap-4 animate-fade-in">
-          <h3 className="font-bold">New Appointment</h3>
-          <div className="form-group">
-            <label className="input-label">Doctor / Specialist *</label>
-            <input className="input" placeholder="e.g. Dr. Sharma (Cardiologist)"
-              value={form.doctor} onChange={e => setForm(f => ({ ...f, doctor: e.target.value }))} />
-          </div>
-          <div className="grid-2">
-            <div className="form-group">
-              <label className="input-label">Date *</label>
-              <input className="input" type="date" min={today}
-                value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
-            </div>
-            <div className="form-group">
-              <label className="input-label">Time</label>
-              <input className="input" type="time"
-                value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
-            </div>
-          </div>
-          <div className="form-group">
-            <label className="input-label">Hospital / Clinic</label>
-            <input className="input" placeholder="e.g. Apollo Hospital, Delhi"
-              value={form.hospital} onChange={e => setForm(f => ({ ...f, hospital: e.target.value }))} />
-          </div>
-          <div className="form-group">
-            <label className="input-label">Notes</label>
-            <textarea className="input" rows={2} placeholder="What to bring, tests to mention..."
-              value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
-          </div>
-          <button className="btn btn-primary w-full" onClick={handleAdd}>Save Appointment</button>
-        </div>
-      )}
-
-      {/* Filter tabs */}
-      <div className={styles.tabs}>
-        {[['upcoming','Upcoming'],['done','Completed'],['all','All']].map(([val, label]) => (
-          <button key={val}
-            className={`${styles.tab} ${filter === val ? styles.active : ''}`}
-            onClick={() => setFilter(val)}
-          >{label}</button>
+      {/* Tab bar */}
+      <div className={styles.tabBar}>
+        {['upcoming', 'past'].map(t => (
+          <button key={t} className={`${styles.tab} ${tab === t ? styles.active : ''}`} onClick={() => setTab(t)}>
+            {t.charAt(0).toUpperCase() + t.slice(1)}
+          </button>
         ))}
       </div>
 
       {/* Appointment cards */}
       {filtered.length === 0 ? (
-        <div className={styles.empty}>
-          <span className={styles.emptyIcon}>🗓️</span>
-          <p>No {filter === 'done' ? 'completed' : 'upcoming'} appointments.</p>
-          <button className="btn btn-primary btn-sm mt-4" onClick={() => setShowForm(true)}>Add Appointment</button>
+        <div className="glass-card text-center flex-col gap-3" style={{ padding: 'var(--space-8)' }}>
+          <span style={{ fontSize: '3rem' }}>📅</span>
+          <p className="font-bold">No {tab} appointments</p>
+          <button className="btn btn-primary btn-sm" style={{ alignSelf: 'center' }} onClick={() => setShowForm(true)}>
+            + Add Appointment
+          </button>
         </div>
       ) : (
-        <div className="flex-col gap-4">
+        <div className="flex-col gap-3">
           {filtered.map(appt => (
-            <div key={appt.id} className={`glass-card flex-col gap-3 ${appt.done ? styles.doneCard : ''}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex-col gap-1">
-                  <span className={`font-bold ${appt.done ? 'text-muted' : ''}`} style={{ fontSize: '1rem' }}>
-                    {appt.done ? '✅ ' : '🏥 '}{appt.doctor}
-                  </span>
-                  {appt.hospital && (
-                    <span className="text-muted text-sm">📍 {appt.hospital}</span>
-                  )}
-                </div>
-                <div className={`${styles.badge} ${appt.done ? styles.badgeDone : styles.badgeUpcoming}`}>
-                  {appt.done ? 'Done' : daysUntil(appt.date)}
-                </div>
+            <div key={appt.id} className={`glass-card flex gap-3 ${styles.apptCard}`} style={{ padding: 'var(--space-4)' }}>
+              {/* Date chip */}
+              <div className={styles.dateChip}>
+                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'white', lineHeight: 1 }}>{getDayOfMonth(appt.date)}</div>
+                <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'rgba(255,255,255,0.8)' }}>{getMonthShort(appt.date)}</div>
               </div>
-
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-muted">
-                  📅 {new Date(appt.date).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}
-                </span>
-                {appt.time && <span className="text-sm text-muted">🕐 {appt.time}</span>}
-              </div>
-
-              {appt.notes && (
-                <p className="text-sm text-muted" style={{ borderLeft: '2px solid var(--primary)', paddingLeft: 10 }}>
-                  {appt.notes}
+              {/* Info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p className="font-bold" style={{ margin: 0, fontSize: '0.95rem' }}>{appt.doctor}</p>
+                <p className="text-xs text-muted" style={{ margin: '2px 0' }}>{appt.specialty}</p>
+                <p className="text-xs" style={{ margin: 0, color: 'var(--text-secondary)' }}>
+                  ⏰ {appt.time} · 📍 {appt.location}
                 </p>
-              )}
-
-              <div className="flex gap-3">
-                <button
-                  className={`btn btn-sm ${appt.done ? 'btn-ghost' : 'btn-primary'}`}
-                  onClick={() => toggleDone(appt.id)}
-                >
-                  {appt.done ? 'Mark Pending' : '✓ Mark Done'}
-                </button>
-                <button className="btn btn-ghost btn-sm text-danger" onClick={() => handleDelete(appt.id)}>
-                  Delete
-                </button>
+                {appt.notes && (
+                  <p className="text-xs text-muted" style={{ margin: '4px 0 0', fontStyle: 'italic' }}>📝 {appt.notes}</p>
+                )}
               </div>
+              <button
+                onClick={() => deleteAppt(appt.id)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1.1rem', flexShrink: 0, alignSelf: 'flex-start' }}
+              >🗑️</button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Add button */}
+      <button className="btn btn-primary w-full" onClick={() => setShowForm(true)}>
+        + Book New Appointment
+      </button>
+
+      {/* Add form modal */}
+      {showForm && (
+        <div className="modal-overlay" onClick={() => setShowForm(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold">New Appointment</h3>
+              <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+            </div>
+            <form onSubmit={handleAdd} className="flex-col gap-4">
+              {[
+                { label: 'Doctor Name', key: 'doctor', type: 'text', placeholder: 'Dr. Sharma', required: true },
+                { label: 'Specialty', key: 'specialty', type: 'text', placeholder: 'Cardiologist' },
+                { label: 'Date', key: 'date', type: 'date', required: true },
+                { label: 'Time', key: 'time', type: 'time', required: true },
+                { label: 'Hospital / Location', key: 'location', type: 'text', placeholder: 'Apollo Hospital' },
+                { label: 'Notes', key: 'notes', type: 'text', placeholder: 'Bring last reports...' },
+              ].map(f => (
+                <div key={f.key} className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="input-label">{f.label}</label>
+                  <input
+                    type={f.type}
+                    className="input"
+                    placeholder={f.placeholder}
+                    value={form[f.key]}
+                    onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                    required={f.required}
+                  />
+                </div>
+              ))}
+              <button type="submit" className="btn btn-primary w-full" disabled={saving}>
+                {saving ? 'Saving...' : 'Book Appointment'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>

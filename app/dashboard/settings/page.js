@@ -68,14 +68,14 @@ export default function SettingsPage() {
   };
 
   const Section = ({ title, children }) => (
-    <div className="glass-card flex-col gap-4">
-      <h3 className="font-bold" style={{ fontSize: '0.95rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>{title}</h3>
-      {children}
+    <div className="glass-card flex-col gap-0" style={{ padding: 0, overflow: 'hidden' }}>
+      <p style={{ padding: 'var(--space-3) var(--space-4)', margin: 0, fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', background: 'var(--bg-base)', borderBottom: '1px solid var(--border)' }}>{title}</p>
+      <div style={{ padding: 'var(--space-2) 0' }}>{children}</div>
     </div>
   );
 
-  const Row = ({ icon, label, children }) => (
-    <div className="flex items-center justify-between">
+  const Row = ({ icon, label, children, last }) => (
+    <div className="flex items-center justify-between" style={{ padding: 'var(--space-3) var(--space-4)', borderBottom: last ? 'none' : '1px solid var(--border)' }}>
       <div className="flex items-center gap-3">
         <span style={{ fontSize: '1.2rem', width: 24 }}>{icon}</span>
         <span className="text-sm font-bold">{label}</span>
@@ -87,7 +87,7 @@ export default function SettingsPage() {
   return (
     <div className="flex-col gap-6 animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">⚙️ {t('settings', 'title')}</h1>
+        <h1 className="page-title">{t('settings', 'title')}</h1>
       </div>
 
       {/* Profile */}
@@ -211,10 +211,10 @@ export default function SettingsPage() {
       <Section title={t('settings', 'account')}>
         <button
           onClick={handleSignOut}
-          className="btn btn-ghost w-full"
-          style={{ color: 'var(--danger)', borderColor: 'rgba(255,71,87,0.3)' }}
+          className="btn w-full"
+          style={{ color: 'white', background: 'var(--danger)', border: 'none', minHeight: 52 }}
         >
-          🚪 {t('settings', 'signOut')}
+          🚪 Sign Out
         </button>
         <button
           className="btn btn-ghost w-full text-xs"

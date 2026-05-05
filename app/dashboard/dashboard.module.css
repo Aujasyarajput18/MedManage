@@ -1,7 +1,16 @@
+/* Dashboard page — Stitch Warm Care Design */
+
+/* ── Hero card (adherence ring + week chart) ── */
 .heroCard {
+  background: var(--primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  color: white;
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-5);
+  border: none;
+  box-shadow: var(--shadow-primary);
 }
 
 @media (min-width: 480px) {
@@ -15,12 +24,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .ringStats {
   display: flex;
-  gap: var(--space-6);
+  gap: var(--space-5);
 }
 
 .statItem {
@@ -34,11 +43,12 @@
   flex: 1;
 }
 
+/* ── Week bar chart ── */
 .weekChart {
   display: flex;
   align-items: flex-end;
   gap: var(--space-2);
-  height: 80px;
+  height: 72px;
 }
 
 .barWrap {
@@ -53,7 +63,7 @@
 .barTrack {
   flex: 1;
   width: 100%;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: flex-end;
@@ -70,11 +80,13 @@
 .barLabel {
   font-size: 0.65rem;
   font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
 }
 
+/* ── Dose rows ── */
 .doseRow {
   transition: transform 0.15s ease;
 }
 .doseRow:hover {
-  transform: translateX(3px);
+  transform: translateX(4px);
 }

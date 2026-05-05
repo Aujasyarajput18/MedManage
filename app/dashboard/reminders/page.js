@@ -160,7 +160,7 @@ export default function RemindersPage() {
 
       {/* ── Page header ── */}
       <div className="page-header">
-        <h1 className="page-title">🔔 Reminders</h1>
+        <h1 className="page-title">Reminders</h1>
         <p className="page-subtitle">Create and manage medication reminders</p>
       </div>
 
@@ -170,7 +170,7 @@ export default function RemindersPage() {
         style={{
           borderLeft: '4px solid var(--warning)',
           padding: 'var(--space-4)',
-          background: 'rgba(255,190,0,0.08)',
+          background: 'rgba(245,158,11,0.06)',
         }}
       >
         <p className="text-sm" style={{ color: 'var(--warning)' }}>
@@ -293,9 +293,10 @@ export default function RemindersPage() {
                   justifyContent: 'space-between',
                   gap: 'var(--space-3)',
                   padding: 'var(--space-3) var(--space-4)',
-                  background: 'var(--bg-glass)',
+                  background: 'var(--bg-card)',
                   borderRadius: 'var(--radius-md)',
                   border: '1px solid var(--border)',
+                  boxShadow: 'var(--shadow-sm)',
                 }}
               >
                 <div className="flex-col gap-1" style={{ flex: 1 }}>
@@ -361,7 +362,7 @@ export default function RemindersPage() {
         <div
           style={{
             position: 'fixed', inset: 0,
-            background: 'rgba(0,0,0,0.7)',
+            background: 'rgba(28,25,23,0.5)',
             zIndex: 200,
             display: 'flex',
             alignItems: 'center',

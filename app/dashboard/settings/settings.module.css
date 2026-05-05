@@ -1,68 +1,100 @@
+/* Settings module — Stitch Warm Care */
+
 .avatar {
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
-  background: var(--primary-glow);
-  border: 2px solid var(--border);
+  background: rgba(13, 148, 136, 0.15);
+  border: 3px solid var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--primary-light);
+  font-family: 'Nunito', sans-serif;
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--primary);
   overflow: hidden;
-  margin: 0 auto;
+  margin: 0 auto var(--space-4);
 }
-.avatar img { width: 100%; height: 100%; object-fit: cover; }
 
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Theme toggle */
 .themeToggle {
   display: flex;
-  background: var(--bg-glass);
-  border-radius: var(--radius-full);
-  padding: 2px;
-  gap: 2px;
+  gap: var(--space-2);
 }
+
 .themeBtn {
-  padding: 4px 12px;
+  padding: 6px 14px;
   border-radius: var(--radius-full);
-  border: none;
-  background: none;
-  color: var(--text-muted);
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: 'Nunito', sans-serif;
   font-size: 0.8rem;
+  font-weight: 700;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  transition: all 0.2s;
+  transition: all 0.18s ease;
 }
+
 .themeBtn.active {
   background: var(--primary);
   color: white;
+  border-color: var(--primary);
 }
 
 /* Toggle switch */
 .toggle {
   position: relative;
   display: inline-block;
-  width: 44px;
-  height: 24px;
+  width: 48px;
+  height: 26px;
+  cursor: pointer;
 }
-.toggle input { opacity: 0; width: 0; height: 0; }
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
 .toggleSlider {
   position: absolute;
   inset: 0;
-  background: var(--bg-glass);
+  background: var(--border);
   border-radius: var(--radius-full);
-  cursor: pointer;
-  transition: 0.3s;
-  border: 1px solid var(--border);
+  transition: background 0.2s ease;
 }
+
 .toggleSlider::before {
   content: '';
   position: absolute;
-  width: 18px; height: 18px;
-  left: 2px; top: 2px;
-  background: var(--text-muted);
+  width: 20px;
+  height: 20px;
+  left: 3px;
+  top: 3px;
+  background: white;
   border-radius: 50%;
-  transition: 0.3s;
+  transition: transform 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
-.toggle input:checked + .toggleSlider { background: var(--primary); }
-.toggle input:checked + .toggleSlider::before { transform: translateX(20px); background: white; }
+
+.toggle input:checked + .toggleSlider {
+  background: var(--primary);
+}
+
+.toggle input:checked + .toggleSlider::before {
+  transform: translateX(22px);
+}
+
+/* Section row divider */
+.sectionRow {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border);
+}
+.sectionRow:last-child { border-bottom: none; }

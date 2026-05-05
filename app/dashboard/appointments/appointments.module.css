@@ -1,67 +1,70 @@
-.tabs {
+/* Appointments module — Stitch Warm Care */
+
+.apptCard {
+  transition: all 0.18s ease;
+  cursor: pointer;
+}
+.apptCard:hover {
+  transform: translateX(4px);
+  box-shadow: var(--shadow-md);
+}
+
+.doctorAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  background: rgba(13, 148, 136, 0.1);
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: 'Nunito', sans-serif;
+}
+
+.dateChip {
+  background: var(--primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  text-align: center;
+  min-width: 48px;
+  flex-shrink: 0;
+}
+
+.tabBar {
   display: flex;
   gap: var(--space-2);
-  background: rgba(255,255,255,0.04);
-  padding: 4px;
+  background: var(--border);
   border-radius: var(--radius-md);
+  padding: 4px;
 }
 
 .tab {
   flex: 1;
-  padding: 8px;
-  border-radius: calc(var(--radius-md) - 2px);
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  background: transparent;
+  padding: var(--space-2) var(--space-3);
   border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
 }
 
 .tab.active {
-  background: var(--primary);
-  color: white;
-  box-shadow: var(--shadow-glow);
-}
-
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 24px;
-  text-align: center;
-  gap: 12px;
-  color: var(--text-muted);
-}
-
-.emptyIcon {
-  font-size: 3rem;
-  display: block;
-  margin-bottom: 8px;
-}
-
-.badge {
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.badgeUpcoming {
-  background: rgba(108, 99, 255, 0.15);
+  background: white;
   color: var(--primary);
-  border: 1px solid rgba(108, 99, 255, 0.3);
-}
-
-.badgeDone {
-  background: rgba(0, 200, 83, 0.12);
-  color: var(--success);
-  border: 1px solid rgba(0, 200, 83, 0.25);
-}
-
-.doneCard {
-  opacity: 0.65;
+  box-shadow: var(--shadow-sm);
 }

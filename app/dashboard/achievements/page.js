@@ -1,161 +1,162 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { getUserProfile, unlockBadge } from '@/lib/firestore';
-import styles from './achievements.module.css';
+import { getUserProfile } from '@/lib/firestore';
+import { isDemoMode } from '@/lib/demo';
+import Link from 'next/link';
 
-const ALL_BADGES = [
-  { id: 'first_week',      icon: '🔥', title: '7-Day Streak',     desc: 'Take your medicines for 7 days straight',        req: 'streak >= 7' },
-  { id: 'month_master',    icon: '🏆', title: 'Month Master',      desc: '30-day streak — incredible dedication!',          req: 'streak >= 30' },
-  { id: 'health_champion', icon: '⚡', title: 'Health Champion',   desc: '100-day streak — you\'re unstoppable',            req: 'streak >= 100' },
-  { id: 'perfect_day',     icon: '✅', title: 'Perfect Day',       desc: 'All doses taken on time for a full day',          req: 'perfect_day' },
-  { id: 'family_guardian', icon: '🤝', title: 'Family Guardian',   desc: 'Added a caregiver to your account',               req: 'caregiver' },
-  { id: 'safety_first',    icon: '🆘', title: 'Safety First',      desc: 'Set up your SOS emergency contacts',              req: 'sos_contacts' },
-  { id: 'ai_explorer',     icon: '🤖', title: 'AI Explorer',       desc: 'Used the AI drug interaction checker',            req: 'ai_check' },
-  { id: 'health_tracker',  icon: '📊', title: 'Health Tracker',    desc: 'Added 10 entries to your health journal',         req: 'journal >= 10' },
+const BADGES = [
+  { id: 'first_dose',    emoji: '🌱', title: 'First Dose',       desc: 'Logged your very first dose',         color: '#10B981', unlocked: true },
+  { id: 'week_streak',   emoji: '🔥', title: '7-Day Streak',     desc: 'Took all doses for 7 days straight',  color: '#F59E0B', unlocked: true },
+  { id: 'month_master',  emoji: '🏆', title: 'Month Master',     desc: 'Perfect adherence for 30 days',       color: '#8B5CF6', unlocked: false },
+  { id: 'med_detective', emoji: '🔬', title: 'Med Detective',    desc: 'Ran your first drug interaction check', color: '#3B82F6', unlocked: true },
+  { id: 'journal_star',  emoji: '📓', title: 'Journal Star',     desc: 'Logged 7 health journal entries',     color: '#EC4899', unlocked: false },
+  { id: 'pill_spotter',  emoji: '📷', title: 'Pill Spotter',     desc: 'Used AI to identify a pill',          color: '#0D9488', unlocked: true },
+  { id: 'care_giver',    emoji: '👨‍👩‍👧', title: 'Care Giver',     desc: 'Added a family member profile',      color: '#FB923C', unlocked: false },
+  { id: 'sos_ready',     emoji: '🆘', title: 'SOS Ready',        desc: 'Set up emergency contacts',           color: '#DC2626', unlocked: true },
+  { id: 'consistent',    emoji: '💎', title: 'Consistent',       desc: '30-day streak — legendary!',          color: '#6366F1', unlocked: false },
 ];
 
-// Demo: some badges unlocked
-const DEMO_UNLOCKED = {
-  first_week:   { unlockedAt: new Date('2026-04-19') },
-  perfect_day:  { unlockedAt: new Date('2026-04-24') },
-  safety_first: { unlockedAt: new Date('2026-04-20') },
-  ai_explorer:  { unlockedAt: new Date('2026-04-25') },
-};
-
-function PointsCounter({ value }) {
-  const [display, setDisplay] = useState(0);
-  useEffect(() => {
-    const step = Math.ceil(value / 50);
-    let cur = 0;
-    const timer = setInterval(() => {
-      cur = Math.min(cur + step, value);
-      setDisplay(cur);
-      if (cur >= value) clearInterval(timer);
-    }, 20);
-    return () => clearInterval(timer);
-  }, [value]);
-  return <span>{display.toLocaleString()}</span>;
-}
+const LEVELS = [
+  { min: 0,   label: 'Beginner 🌱',    next: 100  },
+  { min: 100, label: 'Consistent 🔥',  next: 300  },
+  { min: 300, label: 'Committed 💪',   next: 600  },
+  { min: 600, label: 'Champion 🏆',    next: 1000 },
+  { min: 1000,label: 'Legend 💎',      next: null },
+];
 
 export default function AchievementsPage() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState(null);
-  const [badges, setBadges]   = useState(DEMO_UNLOCKED);
+  const [streak, setStreak]   = useState(14);
+  const [points, setPoints]   = useState(340);
+  const [tab, setTab]         = useState('badges');
+
+  const level     = LEVELS.reduce((acc, l) => points >= l.min ? l : acc, LEVELS[0]);
+  const nextLevel = LEVELS.find(l => l.min > points);
+  const progress  = nextLevel ? Math.round(((points - level.min) / (nextLevel.min - level.min)) * 100) : 100;
+  const unlocked  = BADGES.filter(b => b.unlocked);
 
   useEffect(() => {
-    if (!user) return;
-    getUserProfile(user.uid).then((p) => {
-      if (p) {
-        setProfile(p);
-        setBadges(p.badges || DEMO_UNLOCKED);
-      }
+    if (!user || isDemoMode()) return;
+    getUserProfile(user.uid).then(p => {
+      if (p?.streak) setStreak(p.streak);
+      if (p?.points) setPoints(p.points);
     });
   }, [user]);
 
-  const streak = profile?.streak ?? 14;
-  const points = profile?.points ?? 1250;
-  const unlockedCount = Object.keys(badges).length;
-
   return (
-    <div className="flex-col gap-6 animate-fade-in">
-      <div className="page-header">
-        <h1 className="page-title">🏆 Achievements</h1>
-        <p className="page-subtitle">{unlockedCount} of {ALL_BADGES.length} badges unlocked</p>
-      </div>
-
-      {/* Streak + Points hero */}
-      <div className={styles.heroGrid}>
-        <div className="glass-card text-center">
-          <div className={`${styles.heroValue} animate-float`}>🔥 {streak}</div>
-          <div className="text-sm text-muted mt-2">Day Streak</div>
-          <div className={styles.heroSub}>
-            {streak >= 30 ? 'Month Master 🏆' : streak >= 7 ? 'On fire! Keep going' : `${7 - streak} days to first badge`}
-          </div>
-        </div>
-        <div className="glass-card text-center">
-          <div className={styles.heroValue} style={{ color: 'var(--primary)' }}>
-            💎 <PointsCounter value={points} />
-          </div>
-          <div className="text-sm text-muted mt-2">Total Points</div>
-          <div className={styles.heroSub}>+10 per dose on time</div>
-        </div>
-      </div>
-
-      {/* Progress to next badge */}
-      {streak < 7 && (
-        <div className="glass-card">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-bold">Next: 7-Day Streak 🔥</span>
-            <span className="text-sm text-primary">{streak}/7</span>
-          </div>
-          <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${(streak / 7) * 100}%` }} />
-          </div>
-          <p className="text-xs text-muted mt-2">{7 - streak} more days to unlock</p>
-        </div>
-      )}
-
-      {streak >= 7 && streak < 30 && (
-        <div className="glass-card">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-bold">Next: Month Master 🏆</span>
-            <span className="text-sm text-primary">{streak}/30</span>
-          </div>
-          <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${(streak / 30) * 100}%` }} />
-          </div>
-          <p className="text-xs text-muted mt-2">{30 - streak} more days to unlock</p>
-        </div>
-      )}
-
-      {/* Badge grid */}
+    <div className="flex-col gap-5 animate-fade-in">
       <div>
-        <h2 className="font-bold mb-4">All Badges</h2>
-        <div className={styles.badgeGrid}>
-          {ALL_BADGES.map((badge) => {
-            const unlocked = !!badges[badge.id];
-            const unlockedDate = unlocked ? badges[badge.id]?.unlockedAt : null;
-            return (
-              <div
-                key={badge.id}
-                className={`${styles.badgeCard} ${unlocked ? styles.unlocked : styles.locked}`}
-              >
-                <div className={styles.badgeIcon}>
-                  {unlocked ? badge.icon : '🔒'}
-                </div>
-                <div className={styles.badgeTitle}>{badge.title}</div>
-                <div className={styles.badgeDesc}>{badge.desc}</div>
-                {unlocked && unlockedDate && (
-                  <div className={styles.badgeDate}>
-                    ✓ {new Date(unlockedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        <h1 className="page-title">🏆 Achievements</h1>
+        <p className="page-subtitle">Your health milestones</p>
+      </div>
+
+      {/* Level card */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0D9488, #0A7A70)',
+        borderRadius: 'var(--radius-lg)',
+        padding: 'var(--space-5)',
+        color: 'white',
+      }}>
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>CURRENT LEVEL</p>
+            <p style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, fontFamily: 'Nunito,sans-serif' }}>{level.label}</p>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ margin: 0, fontSize: '1.8rem', fontWeight: 900 }}>{points}</p>
+            <p style={{ margin: 0, fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>total points</p>
+          </div>
+        </div>
+        {nextLevel && (
+          <>
+            <div style={{ height: 8, background: 'rgba(255,255,255,0.2)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${progress}%`, background: 'white', borderRadius: 'var(--radius-full)', transition: 'width 0.8s ease' }} />
+            </div>
+            <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>
+              {nextLevel.min - points} pts to {LEVELS[LEVELS.indexOf(level) + 1]?.label}
+            </p>
+          </>
+        )}
+      </div>
+
+      {/* Stats row */}
+      <div className="flex gap-3">
+        <div className="glass-card flex-col items-center gap-1" style={{ flex: 1, padding: 'var(--space-4)', textAlign: 'center' }}>
+          <span style={{ fontSize: '2rem' }}>🔥</span>
+          <span style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent)', fontFamily: 'Nunito,sans-serif' }}>{streak}</span>
+          <span className="text-xs text-muted font-bold">Day Streak</span>
+        </div>
+        <div className="glass-card flex-col items-center gap-1" style={{ flex: 1, padding: 'var(--space-4)', textAlign: 'center' }}>
+          <span style={{ fontSize: '2rem' }}>🏅</span>
+          <span style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--primary)', fontFamily: 'Nunito,sans-serif' }}>{unlocked.length}</span>
+          <span className="text-xs text-muted font-bold">Badges Earned</span>
+        </div>
+        <div className="glass-card flex-col items-center gap-1" style={{ flex: 1, padding: 'var(--space-4)', textAlign: 'center' }}>
+          <span style={{ fontSize: '2rem' }}>✨</span>
+          <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#8B5CF6', fontFamily: 'Nunito,sans-serif' }}>{BADGES.length - unlocked.length}</span>
+          <span className="text-xs text-muted font-bold">Remaining</span>
         </div>
       </div>
 
-      {/* Points breakdown */}
-      <div className="glass-card flex-col gap-3">
-        <h3 className="font-bold">How to earn points</h3>
-        {[
-          ['✅', 'Take a dose on time', '+10 pts'],
-          ['🔥', 'Daily streak bonus', '+5 pts/day'],
-          ['📝', 'Health journal entry', '+5 pts'],
-          ['🏆', 'Unlock a badge', '+50 pts'],
-          ['🆘', 'Set up SOS contacts', '+20 pts'],
-        ].map(([icon, label, pts]) => (
-          <div key={label} className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span style={{ fontSize: '1.2rem' }}>{icon}</span>
-              <span className="text-sm text-secondary">{label}</span>
-            </div>
-            <span className="badge badge-primary text-xs">{pts}</span>
-          </div>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 8, background: 'var(--border)', borderRadius: 'var(--radius-md)', padding: 4 }}>
+        {['badges', 'history'].map(t => (
+          <button key={t} onClick={() => setTab(t)} style={{
+            flex: 1, padding: '8px', border: 'none', borderRadius: 'var(--radius-sm)',
+            background: tab === t ? 'white' : 'transparent',
+            color: tab === t ? 'var(--primary)' : 'var(--text-muted)',
+            fontFamily: 'Nunito,sans-serif', fontWeight: 700, fontSize: '0.875rem',
+            cursor: 'pointer', boxShadow: tab === t ? 'var(--shadow-sm)' : 'none',
+            transition: 'all 0.18s ease',
+          }}>
+            {t.charAt(0).toUpperCase() + t.slice(1)}
+          </button>
         ))}
       </div>
+
+      {tab === 'badges' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+          {BADGES.map(badge => (
+            <div key={badge.id} className="glass-card-sm flex-col items-center gap-2 text-center" style={{
+              padding: 'var(--space-3)',
+              opacity: badge.unlocked ? 1 : 0.45,
+              filter: badge.unlocked ? 'none' : 'grayscale(1)',
+            }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: '50%',
+                background: badge.unlocked ? `${badge.color}18` : 'var(--border)',
+                border: badge.unlocked ? `2px solid ${badge.color}40` : '2px solid var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1.6rem',
+              }}>{badge.emoji}</div>
+              <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>{badge.title}</p>
+              <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>{badge.desc}</p>
+              {badge.unlocked && <span style={{ background: `${badge.color}18`, color: badge.color, borderRadius: 'var(--radius-full)', padding: '2px 8px', fontSize: '0.6rem', fontWeight: 700 }}>✓ Earned</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'history' && (
+        <div className="flex-col gap-3">
+          {[
+            { date: 'Today',      event: 'Took all morning medicines', pts: 10 },
+            { date: 'Yesterday',  event: '7-day streak reached!',       pts: 50 },
+            { date: '2 days ago', event: 'Logged journal entry',        pts: 5  },
+            { date: '3 days ago', event: 'AI Pill identified',          pts: 15 },
+            { date: '4 days ago', event: 'Took all medicines',          pts: 10 },
+          ].map((h, i) => (
+            <div key={i} className="glass-card-sm flex justify-between items-center" style={{ padding: 'var(--space-3) var(--space-4)' }}>
+              <div>
+                <p className="text-sm font-bold" style={{ margin: 0 }}>{h.event}</p>
+                <p className="text-xs text-muted" style={{ margin: 0 }}>{h.date}</p>
+              </div>
+              <span style={{ background: 'rgba(13,148,136,0.12)', color: 'var(--primary)', borderRadius: 'var(--radius-full)', padding: '4px 10px', fontSize: '0.78rem', fontWeight: 700 }}>+{h.pts} pts</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
