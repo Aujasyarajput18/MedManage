@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useTheme } from '@/context/ThemeContext';
 import { getUserProfile, updateUserProfile } from '@/lib/firestore';
 import { signOut } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
@@ -12,17 +13,14 @@ import styles from './settings.module.css';
 export default function SettingsPage() {
   const { user } = useAuth();
   const { langCode, setLang, t } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const router   = useRouter();
   const [profile, setProfile] = useState({ name: '', email: '' });
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
-  const [theme, setTheme]           = useState('dark');
   const [notifEnabled, setNotifEnabled] = useState(false);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    setTheme(savedTheme);
-    document.documentElement.setAttribute('data-theme', savedTheme);
     // Check real notification permission
     if ('Notification' in window) {
       setNotifEnabled(Notification.permission === 'granted');
@@ -31,8 +29,6 @@ export default function SettingsPage() {
 
   const handleTheme = (t) => {
     setTheme(t);
-    localStorage.setItem('theme', t);
-    document.documentElement.setAttribute('data-theme', t);
   };
 
   useEffect(() => {

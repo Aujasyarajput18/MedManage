@@ -139,10 +139,19 @@ export default function AddMedicinePage() {
             <h1 className="page-title">Add Medicine</h1>
             <p className="page-subtitle">Save your medicine, then check interactions from the list</p>
           </div>
-          <Link href="/dashboard/medicines/identify" className="btn btn-ghost btn-sm flex-col" style={{ gap: 2 }}>
-            <span>📷</span>
-            <span style={{ fontSize: '0.65rem' }}>Identify</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/medicines/identify" className="btn btn-ghost btn-sm flex-col" style={{ gap: 2 }}>
+              <span>📷</span>
+              <span style={{ fontSize: '0.65rem' }}>Identify</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => document.getElementById('add-medicine-form')?.requestSubmit()}
+              className="btn btn-primary btn-sm"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
 
@@ -152,7 +161,7 @@ export default function AddMedicinePage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex-col gap-6">
+      <form id="add-medicine-form" onSubmit={handleSubmit} className="flex-col gap-6">
 
         {/* Medicine Name */}
         <div className="glass-card flex-col gap-4">
@@ -341,7 +350,12 @@ export default function AddMedicinePage() {
           </p>
         </div>
 
-        <button type="submit" className="btn btn-primary btn-lg w-full" disabled={loading}>
+        <button
+          type="submit"
+          className="btn btn-primary btn-lg w-full"
+          disabled={loading}
+          style={{ position: 'sticky', bottom: 'var(--space-3)', zIndex: 30, boxShadow: 'var(--shadow-primary)' }}
+        >
           {loading ? '💾 Saving...' : '✅ Add Medicine'}
         </button>
       </form>

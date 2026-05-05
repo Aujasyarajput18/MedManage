@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signInWithEmail, signInWithGoogle, resetPassword } from '@/lib/auth';
-import { clearDemoData } from '@/lib/demo';
+import { clearDemoData, seedDemoData } from '@/lib/demo';
 
 export default function LoginPage() {
   const [email, setEmail]       = useState('');
@@ -193,7 +193,7 @@ export default function LoginPage() {
         {/* Demo mode */}
         <button
           onClick={() => {
-            localStorage.setItem('demo_active', 'true');
+            seedDemoData();
             router.push('/dashboard?demo=true');
           }}
           style={{
