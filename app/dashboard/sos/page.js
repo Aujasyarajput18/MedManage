@@ -458,6 +458,7 @@ export default function SOSPage() {
             </div>
             <button
               onClick={() => handleDeleteContact(c.id)}
+              aria-label={`Remove ${c.name}`}
               style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '1.2rem' }}
             >
               ×

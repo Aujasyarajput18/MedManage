@@ -4,8 +4,8 @@
   "description": "AI-powered medication tracking with SOS emergency, gamification, and drug interaction checker. Free forever.",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#0A0A1A",
-  "theme_color": "#6C63FF",
+  "background_color": "#FFFBF7",
+  "theme_color": "#0D9488",
   "orientation": "portrait",
   "icons": [
     {

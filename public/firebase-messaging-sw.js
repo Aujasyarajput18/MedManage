@@ -33,7 +33,7 @@ messaging.onBackgroundMessage((payload) => {
   const options = {
     body,
     icon: '/icons/icon-192.png',
-    badge: '/icons/icon-72.png',
+    badge: '/icons/icon-192.png',
     tag: isReminder ? `reminder-${data.reminderId}` : (data.medicineId || 'medmanage-reminder'),
     data,
     requireInteraction: true,

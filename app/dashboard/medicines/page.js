@@ -175,7 +175,7 @@ export default function MedicinesPage() {
                   <div className="flex items-center gap-2">
                     <div className="progress-bar" style={{ flex: 1 }}>
                       <div className="progress-fill" style={{ 
-                        width: `${Math.min(100, (med.pillCount / 30) * 100)}%`,
+                        width: `${Math.min(100, (med.pillCount / (med.pillsTotal || 30)) * 100)}%`,
                         background: refillLow ? 'var(--warning)' : undefined,
                       }} />
                     </div>

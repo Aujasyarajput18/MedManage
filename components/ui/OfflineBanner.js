@@ -29,11 +29,11 @@ export default function OfflineBanner() {
       padding: '8px 16px',
       fontSize: '0.85rem',
       fontWeight: 700,
-      fontFamily: 'Inter, sans-serif',
+      fontFamily: 'Nunito, sans-serif',
       letterSpacing: '0.02em',
       boxShadow: '0 2px 12px rgba(255,71,87,0.4)',
     }}>
-      📴 You're offline — MedManage still works, syncs when you reconnect
+      Offline — MedManage still works, syncs when you reconnect
     </div>
   );
 }

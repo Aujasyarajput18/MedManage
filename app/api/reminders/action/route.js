@@ -1,5 +1,5 @@
 /**
- * app/api/reminders/action/route.js  [NEW]
+ * app/api/reminders/action/route.js
  *
  * Called by the service worker when user taps a notification action
  * while the app is in the background (Taken / Snooze / Skip).

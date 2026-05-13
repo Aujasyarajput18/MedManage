@@ -117,7 +117,7 @@ export default function DashboardPage() {
   const [marking, setMarking] = useState({});
   const [mode, setMode] = useState('today');
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
   const hourNow = new Date().getHours();
   const greeting = hourNow < 12 ? 'Good morning' : hourNow < 17 ? 'Good afternoon' : 'Good evening';
   const dateStr = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
