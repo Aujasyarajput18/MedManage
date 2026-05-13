@@ -1,9 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signInWithEmail, signInWithGoogle, resetPassword } from '@/lib/auth';
 import { clearDemoData, seedDemoData } from '@/lib/demo';
+import Icon from '@/components/ui/Icon';
 
 export default function LoginPage() {
   const [email, setEmail]       = useState('');
@@ -12,6 +13,11 @@ export default function LoginPage() {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const done = localStorage.getItem('medmanage_onboarding_done') === 'true';
+    if (!done) router.replace('/onboarding');
+  }, [router]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -70,8 +76,7 @@ export default function LoginPage() {
           background: 'rgba(255,255,255,0.2)',
           borderRadius: '50%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '2rem',
-        }}>💊</div>
+        }}><Icon name="pill" size={34} color="white" strokeWidth={1.5} /></div>
         <h1 style={{ fontFamily: 'Nunito, sans-serif', fontWeight: 900, fontSize: '1.8rem', color: '#fff', margin: 0 }}>
           MedManage
         </h1>
@@ -100,7 +105,7 @@ export default function LoginPage() {
             fontSize: '0.9rem',
             fontWeight: 600,
           }}>
-            ⚠️ {error}
+            <Icon name="warning" size={15} style={{ marginRight: 6 }} />{error}
           </div>
         )}
 
@@ -152,7 +157,7 @@ export default function LoginPage() {
                   color: 'var(--text-muted)',
                 }}
               >
-                {showPw ? '🙈' : '👁️'}
+                <Icon name={showPw ? 'eye_off' : 'eye'} size={18} />
               </button>
             </div>
           </div>
@@ -164,7 +169,7 @@ export default function LoginPage() {
             disabled={loading}
             style={{ width: '100%', marginTop: 8, fontSize: '1.05rem', minHeight: 56 }}
           >
-            {loading ? '⏳ Signing In...' : 'Sign In'}
+            {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
 
@@ -193,6 +198,7 @@ export default function LoginPage() {
         {/* Demo mode */}
         <button
           onClick={() => {
+            localStorage.setItem('medmanage_onboarding_done', 'true');
             seedDemoData();
             router.push('/dashboard?demo=true');
           }}
@@ -209,13 +215,19 @@ export default function LoginPage() {
             cursor: 'pointer',
           }}
         >
-          🎯 Try Demo (no sign-up needed)
+          Try Demo (no sign-up needed)
         </button>
 
         <p className="text-center text-sm" style={{ marginTop: 24, color: 'var(--text-secondary)' }}>
           New here?{' '}
           <Link href="/auth/signup" style={{ color: 'var(--primary)', fontWeight: 700 }}>
             Create free account →
+          </Link>
+        </p>
+
+        <p className="text-center text-sm" style={{ marginTop: 12 }}>
+          <Link href="/onboarding" style={{ color: 'var(--text-muted)', fontWeight: 800, textDecoration: 'none' }}>
+            Watch tutorial again
           </Link>
         </p>
       </div>

@@ -19,17 +19,18 @@ import {
 import {
   startReminderEngine, cancelReminderTimers, setInAppAlertHandler,
 } from '@/lib/reminderEngine';
+import Icon from '@/components/ui/Icon';
 
 // Snooze default = 10 minutes
 const SNOOZE_MINUTES = 10;
 
 // ─── Status badge config ──────────────────────────────────────────────────
 const STATUS_STYLES = {
-  pending:  { label: '⏳ Pending',   color: 'var(--warning)'  },
-  taken:    { label: '✅ Taken',     color: 'var(--success)'  },
-  snoozed:  { label: '⏰ Snoozed',  color: 'var(--primary)'  },
-  skipped:  { label: '⏭️ Skipped',  color: 'var(--text-muted)' },
-  missed:   { label: '❌ Missed',   color: 'var(--danger)'   },
+  pending:  { label: 'Pending',  color: 'var(--warning)'  },
+  taken:    { label: 'Taken',    color: 'var(--success)'  },
+  snoozed:  { label: 'Snoozed', color: 'var(--primary)'  },
+  skipped:  { label: 'Skipped', color: 'var(--text-muted)' },
+  missed:   { label: 'Missed',  color: 'var(--danger)'   },
 };
 
 function formatDateTime(iso) {
@@ -173,8 +174,8 @@ export default function RemindersPage() {
           background: 'rgba(245,158,11,0.06)',
         }}
       >
-        <p className="text-sm" style={{ color: 'var(--warning)' }}>
-          ⚠️ <strong>Heads up:</strong> Reminders work best when the app is active and internet is
+        <p className="text-sm" style={{ color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: 5 }}>
+          <Icon name="warning" size={14} color="var(--warning)" /><strong>Heads up:</strong> Reminders work best when the app is active and internet is
           available. Offline support and advanced background alerts are coming soon.
         </p>
       </div>
@@ -185,8 +186,8 @@ export default function RemindersPage() {
           className="glass-card flex-col gap-3"
           style={{ borderLeft: '4px solid var(--danger)' }}
         >
-          <p className="font-bold" style={{ color: 'var(--danger)' }}>
-            ❌ Missed Medication{missedAlerts.length > 1 ? 's' : ''}
+          <p className="font-bold" style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <Icon name="close" size={14} color="var(--danger)" /> Missed Medication{missedAlerts.length > 1 ? 's' : ''}
           </p>
           {missedAlerts.map((r) => (
             <p key={r.id} className="text-sm text-secondary">
@@ -211,7 +212,7 @@ export default function RemindersPage() {
           style={{ flexWrap: 'wrap' }}
         >
           <div>
-            <p className="font-bold text-sm">🔔 Enable Push Notifications</p>
+            <p className="font-bold text-sm" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Icon name="bell" size={14} /> Enable Push Notifications</p>
             <p className="text-xs text-muted">
               Get reminders even if you switch tabs (requires browser permission).
             </p>
@@ -228,7 +229,7 @@ export default function RemindersPage() {
 
       {/* ── Create reminder form ── */}
       <div className="glass-card flex-col gap-4">
-        <h3 className="font-bold">➕ New Reminder</h3>
+        <h3 className="font-bold" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="plus" size={16} /> New Reminder</h3>
 
         <div className="flex-col gap-3">
           <div>
@@ -265,17 +266,17 @@ export default function RemindersPage() {
           onClick={handleCreate}
           disabled={creating}
         >
-          {creating ? 'Adding...' : '✅ Add Reminder'}
+          {creating ? 'Adding...' : 'Add Reminder'}
         </button>
       </div>
 
       {/* ── Reminder list ── */}
       <div className="glass-card flex-col gap-3">
-        <h3 className="font-bold">📋 Your Reminders</h3>
+        <h3 className="font-bold" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="bell" size={16} /> Your Reminders</h3>
 
         {reminders.length === 0 && (
           <div className="text-center" style={{ padding: 'var(--space-8)' }}>
-            <div style={{ fontSize: '2rem', marginBottom: 8 }}>🔔</div>
+            <div style={{ marginBottom: 8 }}><Icon name="bell" size={32} color="var(--text-muted)" /></div>
             <p className="text-secondary text-sm">No reminders yet. Add one above.</p>
           </div>
         )}
@@ -325,32 +326,16 @@ export default function RemindersPage() {
                 <div className="flex gap-2" style={{ flexShrink: 0 }}>
                   {r.status === 'pending' && (
                     <>
-                      <button
-                        className="btn btn-sm"
-                        style={{ background: 'var(--success)', color: 'white', border: 'none' }}
-                        onClick={() => handleTaken(r)}
-                        title="Mark as Taken"
-                      >✅</button>
-                      <button
-                        className="btn btn-sm"
-                        style={{ background: 'var(--primary)', color: 'white', border: 'none' }}
-                        onClick={() => handleSnooze(r)}
-                        title={`Snooze ${SNOOZE_MINUTES} min`}
-                      >⏰</button>
-                      <button
-                        className="btn btn-sm"
-                        style={{ background: 'var(--bg-glass)', border: '1px solid var(--border)' }}
-                        onClick={() => handleSkip(r)}
-                        title="Skip"
-                      >⏭️</button>
+                      <button className="btn btn-sm" style={{ background: 'var(--success)', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, padding: 0 }} onClick={() => handleTaken(r)} title="Mark as Taken" aria-label="Taken">
+                        <Icon name="check" size={16} color="white" /></button>
+                      <button className="btn btn-sm" style={{ background: 'var(--primary)', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, padding: 0 }} onClick={() => handleSnooze(r)} title={`Snooze ${SNOOZE_MINUTES} min`} aria-label="Snooze">
+                        <Icon name="clock" size={16} color="white" /></button>
+                      <button className="btn btn-sm" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, padding: 0 }} onClick={() => handleSkip(r)} title="Skip" aria-label="Skip">
+                        <Icon name="skip" size={16} /></button>
                     </>
                   )}
-                  <button
-                    className="btn btn-sm"
-                    style={{ background: 'var(--danger-glow)', color: 'var(--danger)', border: 'none' }}
-                    onClick={() => handleDelete(r.id)}
-                    title="Delete"
-                  >🗑️</button>
+                  <button className="btn btn-sm" style={{ background: 'var(--danger-glow)', color: 'var(--danger)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 34, height: 34, padding: 0 }} onClick={() => handleDelete(r.id)} title="Delete" aria-label="Delete">
+                    <Icon name="trash" size={15} color="var(--danger)" /></button>
                 </div>
               </div>
             );
@@ -380,7 +365,7 @@ export default function RemindersPage() {
             }}
           >
             <div className="text-center">
-              <div style={{ fontSize: '3rem', marginBottom: 8 }}>💊</div>
+            <div style={{ marginBottom: 8 }}><Icon name="pill" size={42} color="var(--warning)" /></div>
               <h2 className="font-bold" style={{ fontSize: '1.3rem' }}>Medication Reminder</h2>
               <p className="text-secondary mt-2">
                 Time to take <strong>{activeAlert.medicineName}</strong>
@@ -396,25 +381,26 @@ export default function RemindersPage() {
               <button
                 id="alert-taken-btn"
                 className="btn btn-primary btn-lg w-full"
-                style={{ background: 'var(--success)' }}
+                style={{ background: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 onClick={() => handleTaken(activeAlert)}
               >
-                ✅ Mark as Taken
+                <Icon name="check" size={18} color="white" /> Mark as Taken
               </button>
               <button
                 id="alert-snooze-btn"
                 className="btn btn-lg w-full"
-                style={{ background: 'var(--primary)', color: 'white' }}
+                style={{ background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 onClick={() => handleSnooze(activeAlert)}
               >
-                ⏰ Snooze {SNOOZE_MINUTES} Minutes
+                <Icon name="clock" size={16} color="white" /> Snooze {SNOOZE_MINUTES} Minutes
               </button>
               <button
                 id="alert-skip-btn"
                 className="btn btn-ghost btn-lg w-full"
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 onClick={() => handleSkip(activeAlert)}
               >
-                ⏭️ Skip This Dose
+                <Icon name="skip" size={16} /> Skip This Dose
               </button>
             </div>
           </div>

@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { LANGUAGES } from '@/lib/translations';
 import styles from './settings.module.css';
+import Icon from '@/components/ui/Icon';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -21,21 +22,15 @@ export default function SettingsPage() {
   const [notifEnabled, setNotifEnabled] = useState(false);
 
   useEffect(() => {
-    // Check real notification permission
     if ('Notification' in window) {
       setNotifEnabled(Notification.permission === 'granted');
     }
   }, []);
 
-  const handleTheme = (t) => {
-    setTheme(t);
-  };
+  const handleTheme = (t) => { setTheme(t); };
 
   useEffect(() => {
-    if (!user) {
-      setProfile({ name: '', email: '' });
-      return;
-    }
+    if (!user) { setProfile({ name: '', email: '' }); return; }
     getUserProfile(user.uid).then(p => {
       if (p) setProfile(p);
       else setProfile({ name: user.displayName || '', email: user.email || '' });
@@ -44,9 +39,7 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    if (user) {
-      await updateUserProfile(user.uid, { name: profile.name });
-    }
+    if (user) await updateUserProfile(user.uid, { name: profile.name });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     setSaving(false);
@@ -59,6 +52,7 @@ export default function SettingsPage() {
   };
 
   const handleResetOnboarding = () => {
+    localStorage.removeItem('medmanage_onboarding_done');
     localStorage.removeItem('onboarding_complete');
     router.push('/onboarding');
   };
@@ -73,7 +67,9 @@ export default function SettingsPage() {
   const Row = ({ icon, label, children, last }) => (
     <div className="flex items-center justify-between" style={{ padding: 'var(--space-3) var(--space-4)', borderBottom: last ? 'none' : '1px solid var(--border)' }}>
       <div className="flex items-center gap-3">
-        <span style={{ fontSize: '1.2rem', width: 24 }}>{icon}</span>
+        <span style={{ width: 24, display: 'flex', alignItems: 'center', color: 'var(--primary)' }}>
+          <Icon name={icon} size={18} />
+        </span>
         <span className="text-sm font-bold">{label}</span>
       </div>
       <div>{children}</div>
@@ -86,7 +82,6 @@ export default function SettingsPage() {
         <h1 className="page-title">{t('settings', 'title')}</h1>
       </div>
 
-      {/* Profile */}
       <Section title={t('settings', 'profile')}>
         <div className={styles.avatar}>
           {user?.photoURL
@@ -96,36 +91,31 @@ export default function SettingsPage() {
         </div>
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="input-label">{t('settings', 'displayName')}</label>
-          <input
-            className="input"
-            value={profile.name || ''}
-            onChange={e => setProfile(p => ({ ...p, name: e.target.value }))}
-          />
+          <input className="input" value={profile.name || ''} onChange={e => setProfile(p => ({ ...p, name: e.target.value }))} />
         </div>
         <div className="form-group" style={{ marginBottom: 0 }}>
           <label className="input-label">{t('settings', 'email')}</label>
           <input className="input" value={profile.email || user?.email || ''} disabled style={{ opacity: 0.6 }} />
         </div>
         <button onClick={handleSave} className="btn btn-primary btn-sm" disabled={saving}>
-          {saved ? `✓ ${t('settings', 'saved')}` : saving ? t('settings', 'saving') : t('settings', 'saveChanges')}
+          {saved ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="check" size={16} /> {t('settings', 'saved')}</span>
+          ) : saving ? t('settings', 'saving') : t('settings', 'saveChanges')}
         </button>
       </Section>
 
-      {/* App Preferences */}
       <Section title={t('settings', 'preferences')}>
-        <Row icon="🎨" label={t('settings', 'theme')}>
+        <Row icon="palette" label={t('settings', 'theme')}>
           <div className={styles.themeToggle}>
             {['dark', 'light'].map(thm => (
-              <button key={thm}
-                onClick={() => handleTheme(thm)}
-                className={`${styles.themeBtn} ${theme === thm ? styles.active : ''}`}
-              >
-                {thm === 'dark' ? `🌙 ${t('settings', 'dark')}` : `☀️ ${t('settings', 'light')}`}
+              <button key={thm} onClick={() => handleTheme(thm)} className={`${styles.themeBtn} ${theme === thm ? styles.active : ''}`}>
+                <Icon name={thm === 'dark' ? 'moon' : 'sun'} size={14} />
+                {' '}{thm === 'dark' ? t('settings', 'dark') : t('settings', 'light')}
               </button>
             ))}
           </div>
         </Row>
-        <Row icon="🔔" label={t('settings', 'notifications')}>
+        <Row icon="bell" label={t('settings', 'notifications')}>
           <label className={styles.toggle}>
             <input
               type="checkbox"
@@ -139,7 +129,6 @@ export default function SettingsPage() {
                   }
                 } else {
                   setNotifEnabled(false);
-                  // Can't programmatically revoke — guide user
                   alert('To disable notifications, go to your browser site settings and block notifications for this site.');
                 }
               }}
@@ -147,13 +136,8 @@ export default function SettingsPage() {
             <span className={styles.toggleSlider} />
           </label>
         </Row>
-        <Row icon="🌐" label={t('settings', 'language')}>
-          <select 
-            className="input" 
-            style={{ width: 140, minHeight: 36, padding: '4px 8px' }}
-            value={langCode}
-            onChange={(e) => setLang(e.target.value)}
-          >
+        <Row icon="globe" label={t('settings', 'language')}>
+          <select className="input" style={{ width: 140, minHeight: 36, padding: '4px 8px' }} value={langCode} onChange={(e) => setLang(e.target.value)}>
             {LANGUAGES.map(lang => (
               <option key={lang.code} value={lang.code}>{lang.native} ({lang.name})</option>
             ))}
@@ -161,56 +145,54 @@ export default function SettingsPage() {
         </Row>
       </Section>
 
-      {/* Quick Links */}
       <Section title={t('settings', 'quickLinks')}>
-        <Row icon="🏥" label={t('settings', 'doctorAppointments')}>
+        <Row icon="hospital" label={t('settings', 'doctorAppointments')}>
           <Link href="/dashboard/appointments" className="btn btn-ghost btn-sm">{t('settings', 'view')} →</Link>
         </Row>
-        <Row icon="🆘" label={t('settings', 'sosEmergency')}>
+        <Row icon="sos" label={t('settings', 'sosEmergency')}>
           <Link href="/dashboard/sos" className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }}>{t('settings', 'open')} →</Link>
         </Row>
-        <Row icon="📷" label={t('settings', 'identifyPill')}>
+        <Row icon="camera" label={t('settings', 'identifyPill')}>
           <Link href="/dashboard/medicines/identify" className="btn btn-ghost btn-sm">{t('settings', 'scan')} →</Link>
         </Row>
-        <Row icon="🤖" label={t('settings', 'drugInteractions')}>
+        <Row icon="nodes" label={t('settings', 'drugInteractions')}>
           <Link href="/dashboard/medicines/interactions" className="btn btn-ghost btn-sm">{t('settings', 'check')} →</Link>
         </Row>
-        <Row icon="📄" label={t('settings', 'doctorsReport')}>
+        <Row icon="file" label={t('settings', 'doctorsReport')}>
           <Link href="/dashboard/export" className="btn btn-ghost btn-sm">{t('settings', 'pdf')} →</Link>
         </Row>
       </Section>
 
-      {/* Privacy & Data */}
       <Section title={t('settings', 'privacyData')}>
-        <Row icon="🔒" label={t('settings', 'weNeverSell')}>
-          <span className="badge badge-success">✓ {t('settings', 'protected')}</span>
+        <Row icon="shield" label={t('settings', 'weNeverSell')}>
+          <span className="badge badge-success" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Icon name="check" size={12} /> {t('settings', 'protected')}
+          </span>
         </Row>
       </Section>
 
-      {/* App */}
       <Section title={t('settings', 'app')}>
-        <Row icon="🔄" label={t('settings', 'resetOnboarding')}>
+        <Row icon="refresh" label={t('settings', 'resetOnboarding')}>
           <button className="btn btn-ghost btn-sm" onClick={handleResetOnboarding}>{t('settings', 'reset')}</button>
         </Row>
-        <Row icon="ℹ️" label={t('settings', 'version')}>
+        <Row icon="info" label={t('settings', 'version')}>
           <span className="text-muted text-sm">v1.0.0 (Jury Build)</span>
         </Row>
-        <Row icon="📋" label={t('settings', 'privacyPolicy')}>
+        <Row icon="lock" label={t('settings', 'privacyPolicy')}>
           <a href="/privacy" className="btn btn-ghost btn-sm">{t('settings', 'view')}</a>
         </Row>
-        <Row icon="📋" label={t('settings', 'termsOfService')}>
+        <Row icon="clipboard" label={t('settings', 'termsOfService')}>
           <a href="/terms" className="btn btn-ghost btn-sm">{t('settings', 'view')}</a>
         </Row>
       </Section>
 
-      {/* Account */}
       <Section title={t('settings', 'account')}>
         <button
           onClick={handleSignOut}
           className="btn w-full"
-          style={{ color: 'white', background: 'var(--danger)', border: 'none', minHeight: 52 }}
+          style={{ color: 'white', background: 'var(--danger)', border: 'none', minHeight: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
         >
-          🚪 Sign Out
+          <Icon name="door" size={18} color="white" /> {t('settings', 'signOut')}
         </button>
         <button
           className="btn btn-ghost w-full text-xs"

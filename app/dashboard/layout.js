@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { LANGUAGES } from '@/lib/translations';
 import FloatingSOS from '@/components/ui/FloatingSOS';
 import { startReminderEngine, cancelReminderTimers } from '@/lib/reminderEngine';
 import { updateReminder } from '@/lib/reminderStore';
@@ -184,6 +185,18 @@ const DRAWER_ITEMS = [
     ),
   },
   {
+    href: '/onboarding',
+    label: 'Tutorial',
+    transKey: 'tutorial',
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="16" x2="12" y2="12"/>
+        <line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+    ),
+  },
+  {
     href: '/dashboard/settings',
     label: 'Settings',
     transKey: 'settings',
@@ -198,11 +211,12 @@ const DRAWER_ITEMS = [
 
 export default function DashboardLayout({ children }) {
   const { user, loading } = useAuth();
-  const { t } = useLanguage();
+  const { t, langCode, setLang } = useLanguage();
   const router   = useRouter();
   const pathname = usePathname();
   const [isDemo, setIsDemo]       = useState(false);
   const [drawerOpen, setDrawer]   = useState(false);
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
   const stopEngineRef             = useRef(null);
 
   useEffect(() => {
@@ -212,6 +226,21 @@ export default function DashboardLayout({ children }) {
     setIsDemo(demo);
     if (!loading && !user && !demo) router.replace('/auth/login');
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user || isDemo) {
+      setOnboardingChecked(true);
+      return;
+    }
+    const done = typeof window !== 'undefined' && localStorage.getItem('medmanage_onboarding_done') === 'true';
+    if (!done) {
+      setOnboardingChecked(false);
+      router.replace('/onboarding');
+      return;
+    }
+    setOnboardingChecked(true);
+  }, [user, loading, isDemo, router]);
 
   useEffect(() => {
     if (loading) return;
@@ -250,6 +279,15 @@ export default function DashboardLayout({ children }) {
   // Close drawer on route change
   useEffect(() => { setDrawer(false); }, [pathname]);
 
+  const showBack = pathname !== '/dashboard';
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push('/dashboard');
+  };
+
   if (loading && !isDemo) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)' }}>
@@ -263,6 +301,21 @@ export default function DashboardLayout({ children }) {
     );
   }
 
+  if (!isDemo && user && !onboardingChecked) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+              <path d="m5 12 4 4L19 6" />
+            </svg>
+          </div>
+          <p style={{ color: 'var(--text-muted)', fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: '0.9rem' }}>Preparing your MedManage walkthrough...</p>
+        </div>
+      </div>
+    );
+  }
+
   const userInitial = user?.displayName?.charAt(0) || user?.email?.charAt(0) || 'M';
 
   return (
@@ -270,18 +323,32 @@ export default function DashboardLayout({ children }) {
 
       {/* ── TOP HEADER ── */}
       <header className={styles.header}>
-        {/* Hamburger → opens side drawer */}
-        <button
-          className={styles.menuBtn}
-          onClick={() => setDrawer(v => !v)}
-          aria-label="Open menu"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="3" y1="6" x2="21" y2="6"/>
-            <line x1="3" y1="12" x2="21" y2="12"/>
-            <line x1="3" y1="18" x2="21" y2="18"/>
-          </svg>
-        </button>
+        <div className={styles.headerLeft}>
+          {showBack && (
+            <button
+              className={styles.backBtn}
+              onClick={handleBack}
+              aria-label="Go back"
+            >
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+          )}
+
+          {/* Hamburger → opens side drawer */}
+          <button
+            className={styles.menuBtn}
+            onClick={() => setDrawer(v => !v)}
+            aria-label="Open menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+        </div>
 
         <div className={styles.logo}>
           <div className={styles.logoMark}>
@@ -328,10 +395,35 @@ export default function DashboardLayout({ children }) {
           </button>
         </div>
 
+        <div className={styles.drawerLanguage}>
+          <label htmlFor="drawer-language">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+            <span>{t('settings', 'language')}</span>
+          </label>
+          <select
+            id="drawer-language"
+            value={langCode}
+            onChange={(event) => setLang(event.target.value)}
+            aria-label={t('settings', 'language')}
+          >
+            {LANGUAGES.map((language) => (
+              <option key={language.code} value={language.code}>
+                {language.native} · {language.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Drawer nav */}
         <nav className={styles.drawerNav}>
           {DRAWER_ITEMS.map(item => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+            const isActive = item.href === '/onboarding'
+              ? pathname === item.href
+              : pathname === item.href || pathname.startsWith(item.href + '/');
             return (
               <Link
                 key={item.href}

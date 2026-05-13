@@ -15,6 +15,7 @@ import { useAuth } from '@/context/AuthContext';
 import { subscribeSOSContacts, addSOSContact, deleteSOSContact, logSOS } from '@/lib/firestore';
 import { getDemoSOSContacts, isDemoMode, setDemoSOSContacts } from '@/lib/demo';
 import styles from './sos.module.css';
+import Icon from '@/components/ui/Icon';
 
 const HOLD_DURATION = 3000; // 3 seconds
 const SMS_COST_PER_MSG = 5; // ₹5 per SMS via Fast2SMS
@@ -217,7 +218,7 @@ export default function SOSPage() {
   if (triggered) {
     return (
       <div className={`animate-fade-in flex-col items-center ${styles.triggeredWrap}`}>
-        <div className={styles.triggeredIcon}>{sending ? '📡' : '✅'}</div>
+        <div className={styles.triggeredIcon}>{sending ? <Icon name="nodes" size={36} color="var(--warning)" /> : <Icon name="check" size={36} color="var(--success)" />}</div>
         <h1 className={styles.triggeredTitle}>
           {sending ? 'Sending SOS...' : 'SOS Alert Sent!'}
         </h1>
@@ -230,19 +231,19 @@ export default function SOSPage() {
               style={{ borderLeft: `4px solid ${sosResult.smsSent ? 'var(--success)' : sosResult.devMode ? 'var(--warning)' : 'var(--danger)'}` }}
             >
               {sosResult.devMode && (
-                <p className="text-sm" style={{ color: 'var(--warning)' }}>
-                  ⚠️ <strong>Dev mode:</strong> No API key set — SMS was NOT actually sent.
+                <p className="text-sm" style={{ color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Icon name="warning" size={13} color="var(--warning)" /><strong>Dev mode:</strong> No API key set — SMS was NOT actually sent.
                   Add <code>FAST2SMS_API_KEY</code> to .env.local to enable.
                 </p>
               )}
               {sosResult.smsSent && (
-                <p className="text-sm" style={{ color: 'var(--success)' }}>
-                  ✅ SMS sent to <strong>{sosResult.valid}</strong> contact{sosResult.valid > 1 ? 's' : ''} via Fast2SMS
+                <p className="text-sm" style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Icon name="check" size={13} color="var(--success)" /> SMS sent to <strong>{sosResult.valid}</strong> contact{sosResult.valid > 1 ? 's' : ''} via Fast2SMS
                 </p>
               )}
               {sosResult.invalid?.length > 0 && (
-                <p className="text-sm" style={{ color: 'var(--danger)' }}>
-                  ❌ {sosResult.invalid.length} invalid number{sosResult.invalid.length > 1 ? 's' : ''} skipped:{' '}
+                <p className="text-sm" style={{ color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Icon name="close" size={13} color="var(--danger)" /> {sosResult.invalid.length} invalid number{sosResult.invalid.length > 1 ? 's' : ''} skipped:{' '}
                   {sosResult.invalid.map((c) => c.name).join(', ')}
                 </p>
               )}
@@ -271,9 +272,9 @@ export default function SOSPage() {
                 target="_blank"
                 rel="noreferrer"
                 className="badge badge-success mb-4"
-                style={{ padding: '8px 16px' }}
+                style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 5 }}
               >
-                📍 Your location: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
+                <Icon name="location" size={14} /> Your location: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
               </a>
             )}
           </>
@@ -312,12 +313,12 @@ export default function SOSPage() {
       {smsBalance !== null && (
         <div
           className={`badge ${smsBalance >= SMS_COST_PER_MSG * contacts.length ? 'badge-success' : 'badge-warning'}`}
-          style={{ width: '100%', justifyContent: 'center', padding: '8px' }}
+          style={{ width: '100%', justifyContent: 'center', padding: '8px', display: 'flex', alignItems: 'center', gap: 6 }}
         >
-          💳 Fast2SMS Balance: ₹{smsBalance}
+          <Icon name="card" size={14} /> Fast2SMS Balance: ₹{smsBalance}
           {smsBalance < SMS_COST_PER_MSG * contacts.length && (
-            <span style={{ marginLeft: 8 }}>
-              — ⚠️ Low (need ₹{SMS_COST_PER_MSG * contacts.length} for {contacts.length} SMS)
+            <span style={{ marginLeft: 4, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              — <Icon name="warning" size={12} /> Low (need ₹{SMS_COST_PER_MSG * contacts.length} for {contacts.length} SMS)
             </span>
           )}
         </div>
@@ -329,8 +330,8 @@ export default function SOSPage() {
         style={{ width: '100%', justifyContent: 'center', padding: '8px' }}
       >
         {location
-          ? `📍 Location ready: ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`
-          : '📍 Location unavailable — enable GPS for best results'}
+          ? <><Icon name="location" size={14} /> Location ready: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</>
+          : <><Icon name="location" size={14} /> Location unavailable — enable GPS for best results</>}
       </div>
 
       {/* ── SMS cost preview ── */}
@@ -343,8 +344,8 @@ export default function SOSPage() {
             padding: 'var(--space-3) var(--space-4)',
           }}
         >
-          <p style={{ color: 'var(--primary)', fontWeight: 600 }}>
-            📱 Will send {contacts.length} SMS × ₹{SMS_COST_PER_MSG} ={' '}
+          <p style={{ color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <Icon name="phone" size={15} color="var(--primary)" /> Will send {contacts.length} SMS × ₹{SMS_COST_PER_MSG} ={' '}
             <strong>₹{contacts.length * SMS_COST_PER_MSG}</strong> per SOS trigger
           </p>
         </div>
@@ -379,7 +380,7 @@ export default function SOSPage() {
           onTouchStart={(e) => { e.preventDefault(); startHold(); }}
           onTouchEnd={cancelHold}
         >
-          <span className={styles.sosBtnIcon}>🆘</span>
+          <span className={styles.sosBtnIcon}><Icon name="sos" size={32} color="white" strokeWidth={2} /></span>
           <span className={styles.sosBtnText}>
             {holding
               ? `${Math.ceil(((HOLD_DURATION - (Date.now() - (startTimeRef.current || Date.now()))) / 1000))}`
@@ -396,7 +397,7 @@ export default function SOSPage() {
       {/* ── Emergency contacts ── */}
       <div className="glass-card flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold">📞 Emergency Contacts ({contacts.length})</h3>
+          <h3 className="font-bold" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="phone" size={16} /> Emergency Contacts ({contacts.length})</h3>
           <button onClick={() => setShowAddContact(!showAddContact)} className="btn btn-ghost btn-sm">
             + Add
           </button>
@@ -470,7 +471,7 @@ export default function SOSPage() {
       {/* ── Test SMS button ── */}
       {contacts.length > 0 && (
         <div className="glass-card flex-col gap-3">
-          <p className="font-bold text-sm">🧪 Test SMS</p>
+          <p className="font-bold text-sm" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Icon name="sparkle" size={15} color="var(--primary)" /> Test SMS</p>
           <p className="text-xs text-muted">
             Send a test message to verify your contacts receive it. Costs ₹{contacts.length * SMS_COST_PER_MSG}.
           </p>
@@ -485,13 +486,13 @@ export default function SOSPage() {
               }}
             >
               {sosResult.devMode && (
-                <p className="text-xs" style={{ color: 'var(--warning)' }}>
-                  ⚠️ Dev mode — no FAST2SMS_API_KEY set. Add it to .env.local.
+                <p className="text-xs" style={{ color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Icon name="warning" size={11} /> Dev mode — no FAST2SMS_API_KEY set. Add it to .env.local.
                 </p>
               )}
               {sosResult.smsSent && (
-                <p className="text-xs" style={{ color: 'var(--success)' }}>
-                  ✅ Test SMS sent to {sosResult.valid} number{sosResult.valid > 1 ? 's' : ''} successfully!
+                <p className="text-xs" style={{ color: 'var(--success)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Icon name="check" size={11} /> Test SMS sent to {sosResult.valid} number{sosResult.valid > 1 ? 's' : ''} successfully!
                 </p>
               )}
               {sosResult.error && !sosResult.devMode && (
@@ -511,14 +512,14 @@ export default function SOSPage() {
             onClick={handleTestSMS}
             disabled={testSending}
           >
-            {testSending ? '📡 Sending...' : `📲 Send Test SMS (₹${contacts.length * SMS_COST_PER_MSG})`}
+            {testSending ? 'Sending...' : `Send Test SMS (₹${contacts.length * SMS_COST_PER_MSG})`}
           </button>
         </div>
       )}
 
       {/* ── Info card ── */}
       <div className="glass-card text-sm" style={{ color: 'var(--text-secondary)' }}>
-        <p className="font-bold mb-2">📱 What happens when SOS triggers:</p>
+        <p className="font-bold mb-2" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Icon name="phone" size={15} /> What happens when SOS triggers:</p>
         <ol style={{ paddingLeft: '1.2rem', lineHeight: 2 }}>
           <li>Your live GPS location is captured</li>
           <li>SMS sent to {contacts.length > 0 ? `all ${contacts.length} emergency contact${contacts.length !== 1 ? 's' : ''}` : 'your emergency contacts'} via Fast2SMS</li>
@@ -526,8 +527,8 @@ export default function SOSPage() {
           <li>Event is logged in your SOS history</li>
         </ol>
         {contacts.length === 0 && (
-          <p className="text-xs mt-3" style={{ color: 'var(--warning)' }}>
-            ⚠️ Add at least one emergency contact above before using SOS.
+          <p className="text-xs mt-3" style={{ color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <Icon name="warning" size={11} /> Add at least one emergency contact above before using SOS.
           </p>
         )}
         <p className="text-xs mt-3" style={{ color: 'var(--text-muted)' }}>

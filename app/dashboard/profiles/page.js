@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getUserProfile, updateUserProfile, subscribeMedicines } from '@/lib/firestore';
 import { isDemoMode } from '@/lib/demo';
+import Icon from '@/components/ui/Icon';
 
 const DEMO_PROFILES = [
   { id: 'self', name: 'Priya Sharma', relation: 'Self', dob: '1955-08-12', bloodGroup: 'B+', conditions: ['Type 2 Diabetes', 'Hypertension'], allergies: ['Penicillin'], isMain: true },
@@ -48,7 +49,7 @@ export default function ProfilesPage() {
   return (
     <div className="flex-col gap-5 animate-fade-in">
       <div>
-        <h1 className="page-title">👨‍👩‍👧 Profiles</h1>
+        <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icon name="users" size={22} color="var(--primary)" /> Profiles</h1>
         <p className="page-subtitle">Manage family members & caregivers</p>
       </div>
 
@@ -99,7 +100,7 @@ export default function ProfilesPage() {
             <div>
               <p className="font-bold" style={{ margin: 0, fontSize: '1.1rem' }}>{current.name}</p>
               <p className="text-sm text-muted" style={{ margin: 0 }}>{current.relation}</p>
-              {current.phone && <p className="text-xs" style={{ margin: 0, color: 'var(--primary)' }}>📞 {current.phone}</p>}
+              {current.phone && <p className="text-xs" style={{ margin: 0, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 4 }}><Icon name="phone" size={12} /> {current.phone}</p>}
             </div>
           </div>
 
@@ -148,8 +149,8 @@ export default function ProfilesPage() {
               ].map((perm, i) => (
                 <div key={i} className="flex justify-between items-center mb-2">
                   <span className="text-sm font-bold">{perm.label}</span>
-                  <span style={{ background: perm.value ? 'rgba(16,185,129,0.12)' : 'rgba(168,162,158,0.12)', color: perm.value ? 'var(--success)' : 'var(--text-muted)', borderRadius: 'var(--radius-full)', padding: '3px 10px', fontSize: '0.75rem', fontWeight: 700 }}>
-                    {perm.value ? '✓ Yes' : '✗ No'}
+                  <span style={{ background: perm.value ? 'rgba(16,185,129,0.12)' : 'rgba(168,162,158,0.12)', color: perm.value ? 'var(--success)' : 'var(--text-muted)', borderRadius: 'var(--radius-full)', padding: '3px 10px', fontSize: '0.75rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Icon name={perm.value ? 'check' : 'close'} size={11} /> {perm.value ? 'Yes' : 'No'}
                   </span>
                 </div>
               ))}
@@ -178,7 +179,7 @@ export default function ProfilesPage() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold">Add Profile</h3>
-              <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'var(--text-muted)' }}>✕</button>
+              <button onClick={() => setShowForm(false)} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><Icon name="close" size={20} /></button>
             </div>
             <form onSubmit={handleAdd} className="flex-col gap-4">
               <div className="form-group" style={{ marginBottom: 0 }}>

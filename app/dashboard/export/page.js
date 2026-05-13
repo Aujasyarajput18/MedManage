@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { subscribeMedicines, subscribeJournalEntries, getUserProfile } from '@/lib/firestore';
 import { getDemoJournal, getDemoMedicines, getDemoProfile, isDemoMode } from '@/lib/demo';
 import styles from './export.module.css';
+import Icon from '@/components/ui/Icon';
 
 export default function ExportPage() {
   const { user, loading: authLoading } = useAuth();
@@ -42,9 +43,9 @@ export default function ExportPage() {
 
   const handleWhatsApp = () => {
     const text = encodeURIComponent(
-      `🏥 My MedManage Health Report\n\n` +
-      `📋 Medicines: ${medicines.map(m => `${m.name} ${m.dosage}`).join(', ')}\n` +
-      `📅 Generated: ${today}\n\n` +
+      `My MedManage Health Report\n\n` +
+      `Medicines: ${medicines.map(m => `${m.name} ${m.dosage}`).join(', ')}\n` +
+      `Generated: ${today}\n\n` +
       `Download MedManage (free): https://medmanage-web.vercel.app`
     );
     window.open(`https://wa.me/?text=${text}`, '_blank');
@@ -63,18 +64,20 @@ export default function ExportPage() {
     <div className="flex-col gap-6 animate-fade-in">
       {/* Hide this header when printing */}
       <div className="page-header no-print" style={{ marginBottom: 0 }}>
-        <h1 className="page-title">📄 Doctor's Report</h1>
+        <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Icon name="file" size={22} color="var(--primary)" /> Doctor's Report
+        </h1>
         <p className="page-subtitle">Export your full health summary as PDF</p>
       </div>
       <div className="no-print flex-col gap-3">
-        <button onClick={handlePrint} className="btn btn-primary w-full" style={{ minHeight: 52 }}>
-          🖨️ Save as PDF / Print
+        <button onClick={handlePrint} className="btn btn-primary w-full" style={{ minHeight: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <Icon name="print" size={18} color="white" /> Save as PDF / Print
         </button>
-        <button onClick={handleWhatsApp} className="btn w-full" style={{ background: '#25D366', color: '#fff', minHeight: 52, border: 'none' }}>
-          <span style={{ marginRight: 8 }}>💬</span>Share via WhatsApp
+        <button onClick={handleWhatsApp} className="btn w-full" style={{ background: '#25D366', color: '#fff', minHeight: 52, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <Icon name="send" size={18} color="white" /> Share via WhatsApp
         </button>
-        <button onClick={handleExportJSON} className="btn btn-ghost w-full">
-          📥 Download Raw Data (JSON)
+        <button onClick={handleExportJSON} className="btn btn-ghost w-full" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <Icon name="download" size={18} /> Download Raw Data (JSON)
         </button>
       </div>
 

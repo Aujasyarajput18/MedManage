@@ -4,11 +4,12 @@ import { useAuth } from '@/context/AuthContext';
 import { subscribeMedicines } from '@/lib/firestore';
 import { checkDrugInteractions } from '@/lib/ai';
 import { getDemoMedicines, isDemoMode } from '@/lib/demo';
+import Icon from '@/components/ui/Icon';
 
 const SEVERITY_CONFIG = {
-  safe:    { color: 'var(--success)', bg: 'rgba(67,217,162,0.1)', border: 'rgba(67,217,162,0.3)', icon: '🟢', label: 'Safe' },
-  caution: { color: 'var(--warning)', bg: 'rgba(255,179,71,0.1)', border: 'rgba(255,179,71,0.3)', icon: '🟡', label: 'Caution' },
-  danger:  { color: 'var(--danger)',  bg: 'rgba(255,71,87,0.1)',  border: 'rgba(255,71,87,0.3)',  icon: '🔴', label: 'Danger' },
+  safe:    { color: 'var(--success)', bg: 'rgba(67,217,162,0.1)', border: 'rgba(67,217,162,0.3)', dotColor: '#10B981', label: 'Safe' },
+  caution: { color: 'var(--warning)', bg: 'rgba(255,179,71,0.1)', border: 'rgba(255,179,71,0.3)', dotColor: '#F59E0B', label: 'Caution' },
+  danger:  { color: 'var(--danger)',  bg: 'rgba(255,71,87,0.1)',  border: 'rgba(255,71,87,0.3)',  dotColor: '#DC2626', label: 'Danger' },
 };
 
 export default function InteractionsPage() {
@@ -53,7 +54,7 @@ export default function InteractionsPage() {
   return (
     <div className="flex-col gap-6 animate-fade-in">
       <div className="page-header">
-        <h1 className="page-title">🤖 AI Drug Checker</h1>
+        <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icon name="ai" size={22} color="var(--primary)" /> AI Drug Checker</h1>
         <p className="page-subtitle">Analyzes {medicines.length} medicines for interactions</p>
       </div>
 
@@ -65,15 +66,15 @@ export default function InteractionsPage() {
         )}
         <div className="flex flex-wrap gap-2">
           {medicines.map((m) => (
-            <span key={m.id} className="badge badge-primary" style={{ fontSize: '0.9rem', padding: '6px 14px' }}>
-              💊 {m.name}
+            <span key={m.id} className="badge badge-primary" style={{ fontSize: '0.9rem', padding: '6px 14px', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Icon name="pill" size={14} /> {m.name}
             </span>
           ))}
         </div>
 
         {medicines.length >= 2 && (
           <button onClick={runCheck} className="btn btn-primary w-full mt-2" disabled={loading}>
-            {loading ? '🤖 Analyzing with AI...' : '🔍 Check Interactions'}
+            {loading ? <><Icon name="ai" size={16} /> Analyzing with AI...</> : <><Icon name="nodes" size={16} /> Check Interactions</>}
           </button>
         )}
       </div>
@@ -81,7 +82,7 @@ export default function InteractionsPage() {
       {/* Loading */}
       {loading && (
         <div className="glass-card text-center" style={{ padding: 'var(--space-10)' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: 'var(--space-4)' }} className="animate-spin">⚙️</div>
+          <div style={{ marginBottom: 'var(--space-4)' }}><Icon name="spinner" size={36} color="var(--primary)" /></div>
           <p className="font-bold">AI is analyzing your medicines...</p>
           <p className="text-muted text-sm mt-2">Checking {medicines.length * (medicines.length - 1) / 2} combinations</p>
         </div>
@@ -98,7 +99,7 @@ export default function InteractionsPage() {
             padding: 'var(--space-5)',
           }}>
             <div className="flex items-center gap-3 mb-2">
-              <span style={{ fontSize: '2rem' }}>{overall.icon}</span>
+              <div style={{ width: 14, height: 14, borderRadius: '50%', background: overall.dotColor, flexShrink: 0 }} />
               <div>
                 <div className="font-bold" style={{ color: overall.color, fontSize: '1.1rem' }}>
                   Overall: {overall.label}
@@ -111,7 +112,7 @@ export default function InteractionsPage() {
           {/* No interactions */}
           {result.interactions.length === 0 && (
             <div className="glass-card text-center">
-              <div style={{ fontSize: '3rem', marginBottom: 'var(--space-4)' }}>✅</div>
+            <div style={{ marginBottom: 'var(--space-4)', display: 'flex', justifyContent: 'center' }}><Icon name="check" size={40} color="var(--success)" /></div>
               <h3 className="font-bold mb-2">No Interactions Found</h3>
               <p className="text-secondary text-sm">Your medicines appear safe to take together.</p>
             </div>
@@ -128,7 +129,7 @@ export default function InteractionsPage() {
                 padding: 'var(--space-5)',
               }}>
                 <div className="flex items-center gap-2 mb-3">
-                  <span>{config.icon}</span>
+                  <div style={{ width: 12, height: 12, borderRadius: '50%', background: config.dotColor, flexShrink: 0 }} />
                   <span className="font-bold" style={{ color: config.color }}>{interaction.title}</span>
                   <span className="badge" style={{ background: config.bg, color: config.color, border: `1px solid ${config.border}`, marginLeft: 'auto' }}>
                     {config.label}
@@ -157,8 +158,8 @@ export default function InteractionsPage() {
             );
           })}
 
-          <p className="text-xs text-muted text-center">
-            ⚕️ This is AI-generated information. Always consult your doctor or pharmacist.
+          <p className="text-xs text-muted text-center" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+            <Icon name="hospital" size={13} /> This is AI-generated information. Always consult your doctor or pharmacist.
           </p>
         </div>
       )}

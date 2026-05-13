@@ -1,173 +1,231 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/context/LanguageContext';
+import { LANGUAGES } from '@/lib/translations';
+import Icon from '@/components/ui/Icon';
 import styles from './onboarding.module.css';
+import SlideWelcome from './components/SlideWelcome';
+import SlideMedicines from './components/SlideMedicines';
+import SlideReminders from './components/SlideReminders';
+import SlideAI from './components/SlideAI';
+import SlideDashboard from './components/SlideDashboard';
+import SlideJournalSOS from './components/SlideJournalSOS';
+import SlideGetStarted from './components/SlideGetStarted';
 
 const SLIDES = [
-  {
-    id: 'welcome',
-    emoji: '💊',
-    emojiAnim: 'float',
-    title: 'Your Health,\nSimplified.',
-    sub: 'Never miss a dose again. MedManage keeps you on track — intelligently, simply, for free.',
-    gradient: 'linear-gradient(135deg, #0D9488, #14B8A6)',
-    glow: 'rgba(13,148,136,0.35)',
-  },
-  {
-    id: 'medicines',
-    emoji: '📋',
-    emojiAnim: 'float',
-    title: 'Add Medicines\nin Seconds.',
-    sub: 'Track name, dosage, frequency, and timing. Check interactions from your medicine list anytime.',
-    gradient: 'linear-gradient(135deg, #10B981, #059669)',
-    glow: 'rgba(16,185,129,0.35)',
-  },
-  {
-    id: 'reminders',
-    emoji: '🔔',
-    emojiAnim: 'bell',
-    title: 'Smart Reminders\nEvery Day.',
-    sub: 'Create reminders, snooze them, and mark doses taken. Stay consistent and earn rewards.',
-    gradient: 'linear-gradient(135deg, #F59E0B, #D97706)',
-    glow: 'rgba(245,158,11,0.35)',
-  },
-  {
-    id: 'sos',
-    emoji: '🆘',
-    emojiAnim: 'pulse',
-    title: 'Emergency SOS\nin One Hold.',
-    sub: 'Hold the SOS button for 3 seconds. Emergency contacts get your location via SMS instantly.',
-    gradient: 'linear-gradient(135deg, #DC2626, #B91C1C)',
-    glow: 'rgba(220,38,38,0.4)',
-  },
-  {
-    id: 'getstarted',
-    emoji: '✅',
-    emojiAnim: 'check',
-    title: "You're All Set!",
-    sub: "Free forever. AI-powered. India's most caring medication app. Let's begin.",
-    gradient: 'linear-gradient(135deg, #FB923C, #EA7A22)',
-    glow: 'rgba(251,146,60,0.35)',
-  },
+  { id: 'welcome', component: SlideWelcome, highlightCount: 1 },
+  { id: 'medicines', component: SlideMedicines, highlightCount: 4 },
+  { id: 'reminders', component: SlideReminders, highlightCount: 4 },
+  { id: 'ai', component: SlideAI, highlightCount: 6 },
+  { id: 'dashboard', component: SlideDashboard, highlightCount: 4 },
+  { id: 'journal-sos', component: SlideJournalSOS, highlightCount: 6 },
+  { id: 'get-started', component: SlideGetStarted, highlightCount: 1 },
 ];
 
+function readReducedMotion() {
+  if (typeof window === 'undefined' || !window.matchMedia) return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 export default function OnboardingPage() {
-  const [current, setCurrent] = useState(0);
-  const [animDir, setAnimDir] = useState('');
-  const router   = useRouter();
+  const router = useRouter();
+  const { langCode, setLang } = useLanguage();
   const touchStartX = useRef(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [direction, setDirection] = useState('next');
+  const [activeHighlight, setActiveHighlight] = useState(0);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
-  const goTo = (idx, dir = 'next') => {
-    setAnimDir(dir);
-    setTimeout(() => {
-      setCurrent(idx);
-      setAnimDir('');
-    }, 50);
+  const highlightCount = SLIDES[currentSlide]?.highlightCount || 1;
+
+  useEffect(() => {
+    setReducedMotion(readReducedMotion());
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleChange = (event) => setReducedMotion(event.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  useEffect(() => {
+    setActiveHighlight(0);
+  }, [currentSlide]);
+
+  useEffect(() => {
+    if (reducedMotion || highlightCount <= 1) return undefined;
+    const timer = window.setInterval(() => {
+      setActiveHighlight((value) => (value + 1) % highlightCount);
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [currentSlide, highlightCount, reducedMotion]);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'ArrowRight') {
+        if (currentSlide === SLIDES.length - 1) {
+          setCompleteAndRoute('/auth/login');
+          return;
+        }
+        setDirection('next');
+        setCurrentSlide((value) => Math.min(value + 1, SLIDES.length - 1));
+      }
+
+      if (event.key === 'ArrowLeft') {
+        setDirection('prev');
+        setCurrentSlide((value) => Math.max(value - 1, 0));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentSlide, router]);
+
+  const setCompleteAndRoute = (href) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('medmanage_onboarding_done', 'true');
+    }
+    router.push(href);
   };
 
-  const next = () => {
-    if (current < SLIDES.length - 1) goTo(current + 1, 'next');
-    else finish();
+  const goTo = (index) => {
+    if (index === currentSlide || index < 0 || index >= SLIDES.length) return;
+    setDirection(index > currentSlide ? 'next' : 'prev');
+    setCurrentSlide(index);
   };
 
-  const prev = () => {
-    if (current > 0) goTo(current - 1, 'prev');
+  const goNext = () => {
+    if (currentSlide === SLIDES.length - 1) {
+      setCompleteAndRoute('/auth/login');
+      return;
+    }
+    setDirection('next');
+    setCurrentSlide((value) => Math.min(value + 1, SLIDES.length - 1));
   };
 
-  const finish = () => {
-    localStorage.setItem('medmanage_onboarding_done', 'true');
-    router.push('/auth/login');
+  const goPrev = () => {
+    if (currentSlide === 0) return;
+    setDirection('prev');
+    setCurrentSlide((value) => Math.max(value - 1, 0));
   };
 
-  const handleTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; };
-  const handleTouchEnd   = (e) => {
-    if (!touchStartX.current) return;
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (diff > 50)       next();
-    else if (diff < -50) prev();
+  const handleTouchStart = (event) => {
+    touchStartX.current = event.touches[0]?.clientX || null;
+  };
+
+  const handleTouchEnd = (event) => {
+    if (touchStartX.current === null) return;
+    const endX = event.changedTouches[0]?.clientX || 0;
+    const diff = touchStartX.current - endX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) goNext();
+      else goPrev();
+    }
     touchStartX.current = null;
   };
 
-  const slide = SLIDES[current];
+  const renderedSlides = useMemo(
+    () => new Set([currentSlide - 1, currentSlide, currentSlide + 1].filter((index) => index >= 0 && index < SLIDES.length)),
+    [currentSlide]
+  );
 
   return (
     <div
-      className={styles.wrapper}
+      className={styles.onboardingRoot}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Background glow */}
-      <div className={styles.bgGlow} style={{ background: slide.glow }} />
+      <div className={styles.bgMesh} aria-hidden="true" />
+      <div className={styles.bgGlowPrimary} aria-hidden="true" />
+      <div className={styles.bgGlowSecondary} aria-hidden="true" />
 
-      {/* Skip button */}
-      {current < SLIDES.length - 1 && (
-        <button className={styles.skip} onClick={finish}>
-          Skip
-        </button>
-      )}
+      <label className={styles.onboardingLanguage}>
+        <Icon name="globe" size={16} />
+        <select
+          value={langCode}
+          onChange={(event) => setLang(event.target.value)}
+          aria-label="Choose app language"
+        >
+          {LANGUAGES.map((language) => (
+            <option key={language.code} value={language.code}>
+              {language.native} · {language.name}
+            </option>
+          ))}
+        </select>
+      </label>
 
-      {/* Slide content */}
-      <div className={`${styles.slide} ${animDir ? styles[animDir] : ''}`} key={slide.id}>
-        {/* Emoji illustration */}
-        <div className={`${styles.emojiWrap} ${styles[slide.emojiAnim]}`}>
-          {slide.id === 'sos' && (
-            <>
-              <div className={styles.pulseRing} style={{ animationDelay: '0s' }} />
-              <div className={styles.pulseRing} style={{ animationDelay: '0.5s' }} />
-              <div className={styles.pulseRing} style={{ animationDelay: '1s' }} />
-            </>
-          )}
-          <div className={styles.emojiCircle} style={{ background: slide.gradient, boxShadow: `0 20px 60px ${slide.glow}` }}>
-            <span className={styles.emoji}>{slide.emoji}</span>
-          </div>
+      <main className={styles.viewport}>
+        <div className={styles.stage} style={{ willChange: reducedMotion ? 'auto' : 'transform' }}>
+          {SLIDES.map((slide, index) => {
+            const SlideComponent = slide.component;
+            const isCurrent = index === currentSlide;
+            const shouldRender = renderedSlides.has(index);
+            const stateClass = isCurrent
+              ? direction === 'prev'
+                ? styles.slideCurrentPrev
+                : styles.slideCurrentNext
+              : index < currentSlide
+                ? styles.slideBefore
+                : styles.slideAfter;
+
+            return (
+              <section
+                key={slide.id}
+                className={`${styles.slideShell} ${stateClass} ${isCurrent ? styles.slideCurrent : ''}`}
+                aria-hidden={!isCurrent}
+              >
+                {shouldRender ? (
+                  <div className={styles.slideFrame}>
+                    <SlideComponent
+                      activeHighlight={activeHighlight}
+                      reducedMotion={reducedMotion}
+                      onTryDemo={() => setCompleteAndRoute('/dashboard?demo=true')}
+                    />
+                  </div>
+                ) : null}
+              </section>
+            );
+          })}
         </div>
+      </main>
 
-        {/* Text */}
-        <div className={styles.textBlock}>
-          <h1 className={styles.title} style={{ whiteSpace: 'pre-line' }}>
-            {slide.title}
-          </h1>
-          <p className={styles.sub}>{slide.sub}</p>
-        </div>
-
-        {/* Progress dots */}
+      <div className={styles.bottomBar}>
         <div className={styles.dots}>
-          {SLIDES.map((_, i) => (
+          {SLIDES.map((slide, index) => (
             <button
-              key={i}
-              className={`${styles.dot} ${i === current ? styles.dotActive : ''}`}
-              onClick={() => goTo(i, i > current ? 'next' : 'prev')}
-              style={i === current ? { background: slide.gradient } : {}}
-              aria-label={`Go to slide ${i + 1}`}
+              key={slide.id}
+              type="button"
+              onClick={() => goTo(index)}
+              className={`${styles.dot} ${index === currentSlide ? styles.dotActive : ''}`}
+              aria-label={`Go to slide ${index + 1}`}
             />
           ))}
         </div>
 
-        {/* CTA */}
-        <div className={styles.actions}>
-          {current === SLIDES.length - 1 ? (
-            <button className={styles.btnFinish} onClick={finish}>
-              Get Started →
+        <div className={styles.actionRow}>
+          {currentSlide > 0 ? (
+            <button type="button" onClick={goPrev} className="btn btn-ghost" aria-label="Previous slide">
+              <span className={styles.arrowBtn}>←</span>
             </button>
           ) : (
-            <button className={styles.btnNext} onClick={next} style={{ background: slide.gradient }}>
-              Next →
-            </button>
+            <div className={styles.actionSpacer} aria-hidden="true" />
           )}
+
+          <button type="button" onClick={goNext} className="btn btn-primary">
+            {currentSlide === SLIDES.length - 1 ? 'Get Started →' : 'Next →'}
+          </button>
         </div>
 
-        {/* Demo mode link */}
-        {current === SLIDES.length - 1 && (
+        {currentSlide < SLIDES.length - 1 ? (
           <button
-            className={styles.demoLink}
-            onClick={() => {
-              localStorage.setItem('medmanage_onboarding_done', 'true');
-              router.push('/dashboard?demo=true');
-            }}
+            type="button"
+            className={styles.skipLink}
+            onClick={() => setCompleteAndRoute('/auth/login')}
           >
-            Try Demo (no sign-up)
+            Skip for now
           </button>
-        )}
+        ) : null}
       </div>
     </div>
   );

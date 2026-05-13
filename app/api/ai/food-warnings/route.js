@@ -27,12 +27,11 @@ export async function POST(request) {
 Return ONLY a JSON object (no markdown):
 {
   "warnings": [
-    { "icon": "🍊", "text": "plain language warning in one sentence" }
+    { "text": "plain language warning in one sentence" }
   ],
   "tip": "one overall dietary tip for this medicine"
 }
 
-Use relevant food emojis (🥛🍷🌿🍊☕🧄🥦 etc.).
 If no significant food interactions exist, return: {"warnings": [], "tip": "No major food interactions. Take with a glass of water."}
 Maximum 4 warnings. Plain language only — no medical jargon.`;
 

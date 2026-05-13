@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { subscribeMedicines, logDose } from '@/lib/firestore';
 import { getDemoMedicines, isDemoMode, updateDemoMedicine } from '@/lib/demo';
 import styles from './medicines.module.css';
+import Icon from '@/components/ui/Icon';
 
 const CATEGORY_COLORS = {
   Chronic:     { bg: 'rgba(108,99,255,0.15)', color: 'var(--primary-light)' },
@@ -83,7 +84,7 @@ export default function MedicinesPage() {
       <input
         type="search"
         className="input"
-        placeholder="🔍  Search medicines..."
+        placeholder="Search medicines..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
@@ -98,7 +99,7 @@ export default function MedicinesPage() {
       {/* Empty state */}
       {!loading && filtered.length === 0 && (
         <div className="glass-card text-center" style={{ padding: 'var(--space-12)' }}>
-          <div style={{ fontSize: '4rem', marginBottom: 'var(--space-4)' }}>💊</div>
+          <div style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="pill" size={56} color="var(--text-muted)" /></div>
           <h3 className="font-bold mb-2">No medicines yet</h3>
           <p className="text-secondary mb-6">Add your first medicine to start tracking.</p>
           <Link href="/dashboard/medicines/add" className="btn btn-primary">
@@ -117,7 +118,7 @@ export default function MedicinesPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className={styles.medIcon} style={{ background: catStyle.bg }}>
-                    💊
+                    <Icon name="pill" size={22} color={catStyle.color} />
                   </div>
                   <div>
                     <h3 className="font-bold">{med.name}</h3>
@@ -136,8 +137,8 @@ export default function MedicinesPage() {
 
               {/* Refill warning */}
               {refillLow && (
-                <div className="badge badge-warning w-full mb-3" style={{ justifyContent: 'center', padding: '6px' }}>
-                  ⚠️ Only {med.pillCount} pills left — refill soon
+                <div className="badge badge-warning w-full mb-3" style={{ justifyContent: 'center', padding: '6px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="warning" size={13} /> Only {med.pillCount} pills left — refill soon
                 </div>
               )}
 
@@ -151,9 +152,9 @@ export default function MedicinesPage() {
                         <button
                           onClick={() => handleDose(med.id, t, 'taken')}
                           className="btn btn-sm btn-success"
-                          style={{ minHeight: 28, padding: '0 8px', fontSize: '0.75rem' }}
+                          style={{ minHeight: 28, padding: '0 8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 4 }}
                         >
-                          ✓ Taken
+                          <Icon name="check" size={11} /> Taken
                         </button>
                         <button
                           onClick={() => handleDose(med.id, t, 'skipped')}
@@ -193,7 +194,7 @@ export default function MedicinesPage() {
       {/* AI Interaction Checker Link */}
       {medicines.length >= 2 && (
         <Link href="/dashboard/medicines/interactions" className="glass-card-primary flex items-center gap-4" style={{ textDecoration: 'none', padding: 'var(--space-4)' }}>
-          <span style={{ fontSize: '1.5rem' }}>🤖</span>
+          <Icon name="ai" size={28} color="var(--primary)" />
           <div>
             <div className="font-bold text-sm">Check Drug Interactions</div>
             <div className="text-xs text-secondary">AI analyzes your {medicines.length} medicines for conflicts</div>

@@ -204,6 +204,7 @@ function ProductCard({ tone }) {
 export default function LandingPage() {
   const router = useRouter();
   const handleDemo = () => {
+    localStorage.setItem('medmanage_onboarding_done', 'true');
     seedDemoData();
     router.push('/dashboard?demo=true');
   };
@@ -236,6 +237,20 @@ export default function LandingPage() {
           <span style={mark('#fff')} /> MedManage
         </Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <Link href="/onboarding" style={{
+            minHeight: 44,
+            borderRadius: 999,
+            padding: '0 18px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(255,255,255,.72)',
+            boxShadow: '0 14px 28px rgba(25,57,71,.12)',
+            color: '#111',
+            textDecoration: 'none',
+            fontSize: 14,
+            fontWeight: 950,
+          }}>Tutorial</Link>
           <Link href="/auth/login" aria-label="Sign in" style={{
             width: 50,
             height: 50,
@@ -332,6 +347,20 @@ export default function LandingPage() {
               fontSize: 16,
               fontWeight: 950,
             }}>Create account</Link>
+            <Link href="/onboarding" style={{
+              minHeight: 56,
+              borderRadius: 999,
+              padding: '0 26px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(17,17,17,.08)',
+              border: '1px solid rgba(17,17,17,.12)',
+              color: '#111',
+              textDecoration: 'none',
+              fontSize: 16,
+              fontWeight: 950,
+            }}>Watch tutorial</Link>
           </div>
         </div>
 

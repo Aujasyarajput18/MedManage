@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getMedicine, updateMedicine, deleteMedicine, logDose } from '@/lib/firestore';
 import { deleteDemoMedicine, getDemoMedicines, isDemoMode, updateDemoMedicine } from '@/lib/demo';
 import styles from '../medicines.module.css';
+import Icon from '@/components/ui/Icon';
 
 const CATEGORIES = ['Chronic', 'Acute', 'Vitamin', 'Supplement', 'Ayurvedic'];
 const FREQUENCIES = [
@@ -144,7 +145,7 @@ export default function MedicineDetailPage() {
       }
       setMed((m) => ({ ...m, ...updated }));
       setEditing(false);
-      showToast('✅ Medicine updated!');
+      showToast('Medicine updated!');
     } catch (err) {
       setError(err.message || 'Failed to save');
     }
@@ -201,7 +202,7 @@ export default function MedicineDetailPage() {
   if (!med) {
     return (
       <div className="glass-card text-center" style={{ padding: 'var(--space-12)' }}>
-        <div style={{ fontSize: '3rem', marginBottom: 'var(--space-4)' }}>💊</div>
+        <div style={{ marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="pill" size={44} color="var(--text-muted)" /></div>
         <h2 className="font-bold mb-2">Medicine not found</h2>
         <p className="text-secondary mb-6">This medicine may have been deleted.</p>
         <button onClick={() => router.replace('/dashboard/medicines')} className="btn btn-primary">
@@ -233,17 +234,18 @@ export default function MedicineDetailPage() {
             <button
               onClick={() => { setEditing(true); setConfirmDelete(false); }}
               className="btn btn-ghost btn-sm"
+              style={{ display: 'flex', alignItems: 'center', gap: 5 }}
             >
-              ✏️ Edit
+              <Icon name="pencil" size={14} /> Edit
             </button>
           )}
           {!editing && (
             <button
               onClick={() => setConfirmDelete(true)}
               className="btn btn-sm"
-              style={{ background: 'rgba(255,71,87,0.1)', color: 'var(--danger)', border: '1px solid var(--danger)' }}
+              style={{ background: 'rgba(255,71,87,0.1)', color: 'var(--danger)', border: '1px solid var(--danger)', display: 'flex', alignItems: 'center', gap: 5 }}
             >
-              🗑️ Delete
+              <Icon name="trash" size={14} /> Delete
             </button>
           )}
         </div>
@@ -257,7 +259,7 @@ export default function MedicineDetailPage() {
           <div className="flex gap-3">
             <button onClick={handleDelete} disabled={deleting} className="btn btn-sm"
               style={{ background: 'var(--danger)', color: 'white', flex: 1 }}>
-              {deleting ? 'Deleting...' : '🗑️ Yes, Delete'}
+              {deleting ? 'Deleting...' : 'Yes, Delete'}
             </button>
             <button onClick={() => setConfirmDelete(false)} className="btn btn-ghost btn-sm" style={{ flex: 1 }}>
               Cancel
@@ -278,8 +280,8 @@ export default function MedicineDetailPage() {
           {/* Identity card */}
           <div className="glass-card">
             <div className="flex items-center gap-4 mb-4">
-              <div className={styles.medIcon} style={{ background: catStyle.bg, width: 56, height: 56, fontSize: '1.8rem' }}>
-                💊
+              <div className={styles.medIcon} style={{ background: catStyle.bg, width: 56, height: 56 }}>
+                <Icon name="pill" size={28} color={catStyle.color} />
               </div>
               <div>
                 <h1 className="page-title" style={{ marginBottom: 2 }}>{med.name}</h1>
@@ -309,9 +311,9 @@ export default function MedicineDetailPage() {
                         <button
                           onClick={() => handleDose(t, 'taken')}
                           className="btn btn-sm btn-success"
-                          style={{ minHeight: 28, padding: '0 8px', fontSize: '0.75rem' }}
+                          style={{ minHeight: 28, padding: '0 8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 4 }}
                         >
-                          ✓ Taken
+                          <Icon name="check" size={11} /> Taken
                         </button>
                         <button
                           onClick={() => handleDose(t, 'skipped')}
@@ -328,17 +330,17 @@ export default function MedicineDetailPage() {
             )}
 
             {med.frequency === 'interval' && med.intervalHours && (
-              <p className="text-sm text-secondary mt-2">⏱️ Every {med.intervalHours} hours since last taken</p>
+              <p className="text-sm text-secondary mt-2" style={{ display: 'flex', alignItems: 'center', gap: 5 }}><Icon name="clock" size={13} /> Every {med.intervalHours} hours since last taken</p>
             )}
           </div>
 
           {/* Refill tracking */}
           {med.pillCount !== null && med.pillCount !== undefined && (
             <div className="glass-card">
-              <p className="font-bold mb-3">📦 Refill Tracking</p>
+              <p className="font-bold mb-3" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="box" size={16} /> Refill Tracking</p>
               {refillLow && (
-                <div className="badge badge-warning w-full mb-3" style={{ justifyContent: 'center', padding: '6px' }}>
-                  ⚠️ Only {med.pillCount} pills left — refill soon!
+                <div className="badge badge-warning w-full mb-3" style={{ justifyContent: 'center', padding: '6px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Icon name="warning" size={13} /> Only {med.pillCount} pills left — refill soon!
                 </div>
               )}
               <div className="flex items-center gap-3">
@@ -368,7 +370,7 @@ export default function MedicineDetailPage() {
 
           {/* Schedule details */}
           <div className="glass-card">
-            <p className="font-bold mb-3">📅 Schedule</p>
+            <p className="font-bold mb-3" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="calendar" size={16} /> Schedule</p>
             <div className="flex-col gap-2">
               {med.startDate && (
                 <div className="flex justify-between text-sm">
@@ -398,7 +400,7 @@ export default function MedicineDetailPage() {
               className="glass-card flex-1 text-center"
               style={{ textDecoration: 'none', padding: 'var(--space-4)', cursor: 'pointer' }}
             >
-              <div style={{ fontSize: '1.5rem', marginBottom: 4 }}>🤖</div>
+              <Icon name="ai" size={24} color="var(--primary)" />
               <div className="text-xs font-bold">Check Interactions</div>
             </a>
             <a
@@ -406,7 +408,7 @@ export default function MedicineDetailPage() {
               className="glass-card flex-1 text-center"
               style={{ textDecoration: 'none', padding: 'var(--space-4)', cursor: 'pointer' }}
             >
-              <div style={{ fontSize: '1.5rem', marginBottom: 4 }}>📷</div>
+              <Icon name="camera" size={24} color="var(--primary)" />
               <div className="text-xs font-bold">Identify Pill</div>
             </a>
           </div>
@@ -568,7 +570,7 @@ export default function MedicineDetailPage() {
           </div>
 
           <button type="submit" className="btn btn-primary btn-lg w-full" disabled={saving}>
-            {saving ? '💾 Saving...' : '✅ Save Changes'}
+            {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </form>
       )}

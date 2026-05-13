@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { addMedicine } from '@/lib/firestore';
 import { addDemoMedicine, isDemoMode } from '@/lib/demo';
+import Icon from '@/components/ui/Icon';
 
 // Popular Indian medicines autocomplete
 const INDIAN_MEDICINES = [
@@ -141,7 +142,7 @@ export default function AddMedicinePage() {
           </div>
           <div className="flex items-center gap-2">
             <Link href="/dashboard/medicines/identify" className="btn btn-ghost btn-sm flex-col" style={{ gap: 2 }}>
-              <span>📷</span>
+              <Icon name="camera" size={16} />
               <span style={{ fontSize: '0.65rem' }}>Identify</span>
             </Link>
             <button
@@ -199,7 +200,7 @@ export default function AddMedicinePage() {
                     onMouseEnter={(e) => e.target.style.background = 'var(--bg-glass)'}
                     onMouseLeave={(e) => e.target.style.background = 'none'}
                   >
-                    💊 {s}
+                    <Icon name="pill" size={14} color="var(--text-muted)" style={{ marginRight: 6 }} /> {s}
                   </button>
                 ))}
               </div>
@@ -344,7 +345,7 @@ export default function AddMedicinePage() {
 
         {/* AI note */}
         <div className="glass-card-primary flex items-center gap-3" style={{ padding: 'var(--space-3)' }}>
-          <span>🤖</span>
+          <Icon name="ai" size={20} color="var(--primary)" />
           <p className="text-sm text-secondary">
             After saving, you can run the interaction checker from the medicines page.
           </p>
@@ -356,7 +357,7 @@ export default function AddMedicinePage() {
           disabled={loading}
           style={{ position: 'sticky', bottom: 'var(--space-3)', zIndex: 30, boxShadow: 'var(--shadow-primary)' }}
         >
-          {loading ? '💾 Saving...' : '✅ Add Medicine'}
+          {loading ? 'Saving...' : 'Add Medicine'}
         </button>
       </form>
     </div>

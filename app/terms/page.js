@@ -55,7 +55,7 @@ export default function TermsPage() {
           ← Back to Settings
         </Link>
         <h1 style={{ fontFamily: 'Nunito,sans-serif', fontWeight: 900, fontSize: '1.8rem', color: 'white', margin: '12px 0 4px' }}>
-          📋 Terms of Service
+          Terms of Service
         </h1>
         <p style={{ color: 'rgba(255,255,255,0.8)', margin: 0, fontSize: '0.9rem' }}>
           Last updated: May 2026 · MedManage App
@@ -72,7 +72,7 @@ export default function TermsPage() {
           marginBottom: 'var(--space-5)',
         }}>
           <p style={{ margin: 0, color: 'var(--danger)', fontWeight: 700, fontSize: '0.95rem' }}>
-            ⚠️ <strong>Important:</strong> MedManage is not a substitute for professional medical advice. Always consult your doctor.
+            <strong>Important:</strong> MedManage is not a substitute for professional medical advice. Always consult your doctor.
           </p>
         </div>
 

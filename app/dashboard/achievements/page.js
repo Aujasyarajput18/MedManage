@@ -4,32 +4,33 @@ import { useAuth } from '@/context/AuthContext';
 import { getUserProfile } from '@/lib/firestore';
 import { isDemoMode } from '@/lib/demo';
 import Link from 'next/link';
+import Icon from '@/components/ui/Icon';
 
 const BADGES = [
-  { id: 'first_dose',    emoji: '🌱', title: 'First Dose',       desc: 'Logged your very first dose',         color: '#10B981', unlocked: true },
-  { id: 'week_streak',   emoji: '🔥', title: '7-Day Streak',     desc: 'Took all doses for 7 days straight',  color: '#F59E0B', unlocked: true },
-  { id: 'month_master',  emoji: '🏆', title: 'Month Master',     desc: 'Perfect adherence for 30 days',       color: '#8B5CF6', unlocked: false },
-  { id: 'med_detective', emoji: '🔬', title: 'Med Detective',    desc: 'Ran your first drug interaction check', color: '#3B82F6', unlocked: true },
-  { id: 'journal_star',  emoji: '📓', title: 'Journal Star',     desc: 'Logged 7 health journal entries',     color: '#EC4899', unlocked: false },
-  { id: 'pill_spotter',  emoji: '📷', title: 'Pill Spotter',     desc: 'Used AI to identify a pill',          color: '#0D9488', unlocked: true },
-  { id: 'care_giver',    emoji: '👨‍👩‍👧', title: 'Care Giver',     desc: 'Added a family member profile',      color: '#FB923C', unlocked: false },
-  { id: 'sos_ready',     emoji: '🆘', title: 'SOS Ready',        desc: 'Set up emergency contacts',           color: '#DC2626', unlocked: true },
-  { id: 'consistent',    emoji: '💎', title: 'Consistent',       desc: '30-day streak — legendary!',          color: '#6366F1', unlocked: false },
+  { id: 'first_dose',    icon: 'sparkle',   title: 'First Dose',       desc: 'Logged your very first dose',           color: '#10B981', unlocked: true  },
+  { id: 'week_streak',   icon: 'fire',       title: '7-Day Streak',     desc: 'Took all doses for 7 days straight',    color: '#F59E0B', unlocked: true  },
+  { id: 'month_master',  icon: 'trophy',     title: 'Month Master',     desc: 'Perfect adherence for 30 days',         color: '#8B5CF6', unlocked: false },
+  { id: 'med_detective', icon: 'microscope', title: 'Med Detective',    desc: 'Ran your first drug interaction check', color: '#3B82F6', unlocked: true  },
+  { id: 'journal_star',  icon: 'book',       title: 'Journal Star',     desc: 'Logged 7 health journal entries',       color: '#EC4899', unlocked: false },
+  { id: 'pill_spotter',  icon: 'camera',     title: 'Pill Spotter',     desc: 'Used AI to identify a pill',            color: '#0D9488', unlocked: true  },
+  { id: 'care_giver',    icon: 'users',      title: 'Care Giver',       desc: 'Added a family member profile',         color: '#FB923C', unlocked: false },
+  { id: 'sos_ready',     icon: 'sos',        title: 'SOS Ready',        desc: 'Set up emergency contacts',             color: '#DC2626', unlocked: true  },
+  { id: 'consistent',    icon: 'gem',        title: 'Consistent',       desc: '30-day streak — legendary!',            color: '#6366F1', unlocked: false },
 ];
 
 const LEVELS = [
-  { min: 0,   label: 'Beginner 🌱',    next: 100  },
-  { min: 100, label: 'Consistent 🔥',  next: 300  },
-  { min: 300, label: 'Committed 💪',   next: 600  },
-  { min: 600, label: 'Champion 🏆',    next: 1000 },
-  { min: 1000,label: 'Legend 💎',      next: null },
+  { min: 0,    label: 'Beginner',    next: 100  },
+  { min: 100,  label: 'Consistent',  next: 300  },
+  { min: 300,  label: 'Committed',   next: 600  },
+  { min: 600,  label: 'Champion',    next: 1000 },
+  { min: 1000, label: 'Legend',      next: null },
 ];
 
 export default function AchievementsPage() {
   const { user } = useAuth();
-  const [streak, setStreak]   = useState(14);
-  const [points, setPoints]   = useState(340);
-  const [tab, setTab]         = useState('badges');
+  const [streak, setStreak] = useState(14);
+  const [points, setPoints] = useState(340);
+  const [tab, setTab]       = useState('badges');
 
   const level     = LEVELS.reduce((acc, l) => points >= l.min ? l : acc, LEVELS[0]);
   const nextLevel = LEVELS.find(l => l.min > points);
@@ -47,17 +48,14 @@ export default function AchievementsPage() {
   return (
     <div className="flex-col gap-5 animate-fade-in">
       <div>
-        <h1 className="page-title">🏆 Achievements</h1>
+        <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Icon name="trophy" size={24} color="var(--primary)" /> Achievements
+        </h1>
         <p className="page-subtitle">Your health milestones</p>
       </div>
 
       {/* Level card */}
-      <div style={{
-        background: 'linear-gradient(135deg, #0D9488, #0A7A70)',
-        borderRadius: 'var(--radius-lg)',
-        padding: 'var(--space-5)',
-        color: 'white',
-      }}>
+      <div style={{ background: 'linear-gradient(135deg, #0D9488, #0A7A70)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)', color: 'white' }}>
         <div className="flex justify-between items-start mb-4">
           <div>
             <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>CURRENT LEVEL</p>
@@ -83,17 +81,17 @@ export default function AchievementsPage() {
       {/* Stats row */}
       <div className="flex gap-3">
         <div className="glass-card flex-col items-center gap-1" style={{ flex: 1, padding: 'var(--space-4)', textAlign: 'center' }}>
-          <span style={{ fontSize: '2rem' }}>🔥</span>
+          <Icon name="fire" size={32} color="#F59E0B" />
           <span style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--accent)', fontFamily: 'Nunito,sans-serif' }}>{streak}</span>
           <span className="text-xs text-muted font-bold">Day Streak</span>
         </div>
         <div className="glass-card flex-col items-center gap-1" style={{ flex: 1, padding: 'var(--space-4)', textAlign: 'center' }}>
-          <span style={{ fontSize: '2rem' }}>🏅</span>
+          <Icon name="medal" size={32} color="var(--primary)" />
           <span style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--primary)', fontFamily: 'Nunito,sans-serif' }}>{unlocked.length}</span>
           <span className="text-xs text-muted font-bold">Badges Earned</span>
         </div>
         <div className="glass-card flex-col items-center gap-1" style={{ flex: 1, padding: 'var(--space-4)', textAlign: 'center' }}>
-          <span style={{ fontSize: '2rem' }}>✨</span>
+          <Icon name="sparkle" size={32} color="#8B5CF6" />
           <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#8B5CF6', fontFamily: 'Nunito,sans-serif' }}>{BADGES.length - unlocked.length}</span>
           <span className="text-xs text-muted font-bold">Remaining</span>
         </div>
@@ -128,11 +126,16 @@ export default function AchievementsPage() {
                 background: badge.unlocked ? `${badge.color}18` : 'var(--border)',
                 border: badge.unlocked ? `2px solid ${badge.color}40` : '2px solid var(--border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '1.6rem',
-              }}>{badge.emoji}</div>
+              }}>
+                <Icon name={badge.icon} size={24} color={badge.unlocked ? badge.color : 'var(--text-muted)'} />
+              </div>
               <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>{badge.title}</p>
               <p style={{ margin: 0, fontSize: '0.6rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>{badge.desc}</p>
-              {badge.unlocked && <span style={{ background: `${badge.color}18`, color: badge.color, borderRadius: 'var(--radius-full)', padding: '2px 8px', fontSize: '0.6rem', fontWeight: 700 }}>✓ Earned</span>}
+              {badge.unlocked && (
+                <span style={{ background: `${badge.color}18`, color: badge.color, borderRadius: 'var(--radius-full)', padding: '2px 8px', fontSize: '0.6rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Icon name="check" size={10} color={badge.color} /> Earned
+                </span>
+              )}
             </div>
           ))}
         </div>
@@ -142,10 +145,10 @@ export default function AchievementsPage() {
         <div className="flex-col gap-3">
           {[
             { date: 'Today',      event: 'Took all morning medicines', pts: 10 },
-            { date: 'Yesterday',  event: '7-day streak reached!',       pts: 50 },
-            { date: '2 days ago', event: 'Logged journal entry',        pts: 5  },
-            { date: '3 days ago', event: 'AI Pill identified',          pts: 15 },
-            { date: '4 days ago', event: 'Took all medicines',          pts: 10 },
+            { date: 'Yesterday',  event: '7-day streak reached!',      pts: 50 },
+            { date: '2 days ago', event: 'Logged journal entry',       pts: 5  },
+            { date: '3 days ago', event: 'AI Pill identified',         pts: 15 },
+            { date: '4 days ago', event: 'Took all medicines',         pts: 10 },
           ].map((h, i) => (
             <div key={i} className="glass-card-sm flex justify-between items-center" style={{ padding: 'var(--space-3) var(--space-4)' }}>
               <div>
